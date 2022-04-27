@@ -26,6 +26,7 @@ LRESULT WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 	{
 		//ウィンドウが破壊された
 	case WM_DESTROY:
+
 		//osに対して、アプリの終了を伝える
 		PostQuitMessage(0);
 		return 0;
@@ -55,8 +56,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	//ウィンドウクラスをosに登録する
 	RegisterClassEx(&w);
+
 	//ウィンドウサイズ{x座標,y座標,横幅,縦幅}
 	RECT wrc = { 0,0,window_width,window_height };
+
 	//自動でサイズを補正する
 	AdjustWindowRect(&wrc, WS_OVERLAPPEDWINDOW, false);
 
@@ -104,6 +107,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	//アダプターの列挙用
 	std::vector<IDXGIAdapter4*>adapters;
+
 	//ここに特定の名前を持つアダプターオブジェクトが入る
 	IDXGIAdapter4* tmpAdapter = nullptr;
 
@@ -119,6 +123,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	for (size_t i = 0; i < adapters.size(); i++)
 	{
 		DXGI_ADAPTER_DESC3 adapterDesc;
+
 		//アダプターの情報を取得する
 		adapters[i]->GetDesc3(&adapterDesc);
 

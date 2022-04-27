@@ -259,6 +259,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		{-0.5f,-0.5f,0.0f},//左下
 		{-0.5f,+0.5f,0.0f},//左上
 		{+0.5f,-0.5f,0.0f},//右下
+		{+0.5f,+0.5f,0.0f},//右上
 	};
 
 	//頂点データ全体のサイズ = 頂点データ一つ分のサイズ * 頂点データの要素数
@@ -393,7 +394,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	// ラスタライザの設定
 	pipelineDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE; // カリングしない
-	pipelineDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID; // ポリゴン内塗りつぶし
+	//pipelineDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID; // ポリゴン内塗りつぶし
+	pipelineDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME; //ワイヤーフレーム
 	pipelineDesc.RasterizerState.DepthClipEnable = true; // 深度クリッピングを有効に
 
 	// ブレンドステート
@@ -438,7 +440,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	assert(SUCCEEDED(result));
 
 
-
 	// --- 描画初期化処理　ここまで --- //
 
 	//ゲームループ
@@ -468,10 +469,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		BYTE key[256] = {};
 		keyboard->GetDeviceState(sizeof(key), key);
 
+		//bool pushKey(uint8_t key[DIK_1]);
+
 		//数字の0キーが押されていたら
 		if (key[DIK_0])
 		{
 			OutputDebugStringA("Hit 0\n"); //出力ウィンドウに「Hit 0」と表示
+		}
+
+		if (key[DIK_2])
+		{
+			pipelineDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
 		}
 
 		// バックバッファの番号を取得(2つなので0番か1番)
@@ -497,7 +505,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		//スペースキーが押されていたら
 		if (key[DIK_SPACE])
 		{
-			FLOAT clearColor[] = { 0.1f,0.8f,0.8f,0.0f };
+			FLOAT clearColor[] = { 1.0f,0.3f,0.3f,0.0f };
 			commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 		}
 
@@ -505,10 +513,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 		// --- グラフィックスコマンド --- //
 
+		// -- 三角形1個目 -- //
+
 		// ビューポート設定コマンド
 		D3D12_VIEWPORT viewport{};
-		viewport.Width = window_width;
-		viewport.Height = window_height;
+		viewport.Width = 800; // 元の数値、window_width;
+		viewport.Height = 400; // 元の数値、window_height;
 		viewport.TopLeftX = 0;
 		viewport.TopLeftY = 0;
 		viewport.MinDepth = 0.0f;
@@ -534,8 +544,83 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		// プリミティブ形状の設定コマンド
 		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // 三角形リスト
 
+		if (key[DIK_1])
+		{
+			commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+		}
+
 		// 頂点バッファビューの設定コマンド
 		commandList->IASetVertexBuffers(0, 1, &vbView);
+
+		// 描画コマンド
+		commandList->DrawInstanced(_countof(vertices), 1, 0, 0); // 全ての頂点を使って描画
+
+
+		// -- 三角形2個目 -- //
+
+		// ビューポート設定コマンド
+		viewport.Width = 428;
+		viewport.Height = 400; 
+		viewport.TopLeftX = 800;
+		viewport.TopLeftY = 0;
+		viewport.MinDepth = 0.0f;
+		viewport.MaxDepth = 1.0f;
+
+		// ビューポート設定コマンドを、コマンドリストに積む
+		commandList->RSSetViewports(1, &viewport);
+
+		// シザー矩形
+		scissorRect.left = 0; // 切り抜き座標左
+		scissorRect.right = scissorRect.left + window_width; // 切り抜き座標右
+		scissorRect.top = 0; // 切り抜き座標上
+		scissorRect.bottom = scissorRect.top + window_height; // 切り抜き座標下
+
+		// 描画コマンド
+		commandList->DrawInstanced(_countof(vertices), 1, 0, 0); // 全ての頂点を使って描画
+
+
+		// -- 三角形3個目 -- //
+
+		// ビューポート設定コマンド
+		viewport.Width = 800;
+		viewport.Height = 320;
+		viewport.TopLeftX = 0;
+		viewport.TopLeftY = 400;
+		viewport.MinDepth = 0.0f;
+		viewport.MaxDepth = 1.0f;
+
+		// ビューポート設定コマンドを、コマンドリストに積む
+		commandList->RSSetViewports(1, &viewport);
+
+		// シザー矩形
+		scissorRect.left = 0; // 切り抜き座標左
+		scissorRect.right = scissorRect.left + window_width; // 切り抜き座標右
+		scissorRect.top = 0; // 切り抜き座標上
+		scissorRect.bottom = scissorRect.top + window_height; // 切り抜き座標下
+
+		// 描画コマンド
+		commandList->DrawInstanced(_countof(vertices), 1, 0, 0); // 全ての頂点を使って描画
+
+
+		// -- 三角形4個目 -- //
+
+		// ビューポート設定コマンド
+		viewport.Width = 428;
+		viewport.Height = 320;
+		viewport.TopLeftX = 800;
+		viewport.TopLeftY = 400;
+		viewport.MinDepth = 0.0f;
+		viewport.MaxDepth = 1.0f;
+
+		// ビューポート設定コマンドを、コマンドリストに積む
+		commandList->RSSetViewports(1, &viewport);
+
+		// シザー矩形
+		scissorRect.left = 0; // 切り抜き座標左
+		scissorRect.right = scissorRect.left + window_width; // 切り抜き座標右
+		scissorRect.top = 0; // 切り抜き座標上
+		scissorRect.bottom = scissorRect.top + window_height; // 切り抜き座標下
+
 
 		// 描画コマンド
 		commandList->DrawInstanced(_countof(vertices), 1, 0, 0); // 全ての頂点を使って描画

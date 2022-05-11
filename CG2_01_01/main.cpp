@@ -81,6 +81,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	MSG msg{};//メッセージ
 
+
+
 	// --- DirectX初期化処理　ここから --- //
 
 #ifdef _DEBUG
@@ -529,14 +531,15 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 		//全キーの入力状態を取得する
 		BYTE key[256] = {};
-		keyboard->GetDeviceState(sizeof(key), key);
+		
 		BYTE oldKey[256] = {};
-		//keyboard->GetDeviceState(sizeof(oldKey), oldKey);
 
 		for (int i = 0; i < 256; i++)
 		{
 			oldKey[i] = key[i];
 		}
+
+		keyboard->GetDeviceState(sizeof(key), key); //キーの情報を取得
 
 		//数字の0キーが押されていたら
 		if (key[DIK_0])
@@ -564,19 +567,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		FLOAT clearColor[] = { 0.1f,0.25f,0.5f,0.0f }; //青っぽい色{ R, G, B, A }
 		commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 
+
 		//スペースキーが押されていたら
 
 		bool pushKeySpace = 0;
 
-		if (key[DIK_SPACE] && oldKey[DIK_SPACE])
+		if (key[DIK_SPACE] && oldKey[DIK_SPACE] == 0)
 		{
-			if (pushKeySpace == 1)
-			{
-				pushKeySpace = 0;
-			}else if (pushKeySpace == 0)
-			{
-				pushKeySpace = 1;
-			}
+			pushKeySpace = 1;
 		}
 
 		if (pushKeySpace == 1)
@@ -617,7 +615,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		commandList->SetPipelineState(pipelineState);
 		commandList->SetGraphicsRootSignature(rootSignature);
 		
-		if (key[DIK_2])
+		bool pushKey2 = 0;
+
+		if (key[DIK_2] && oldKey[DIK_2] == 0)
+		{
+			pushKey2 = 1;
+		}
+
+		if (pushKey2 == 1)
 		{
 			commandList->SetPipelineState(pipelineState2);
 			commandList->SetGraphicsRootSignature(rootSignature2);
@@ -626,7 +631,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		// プリミティブ形状の設定コマンド
 		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // 三角形リスト
 
-		if (key[DIK_1])
+		bool pushKey1 = 0;
+
+		if (key[DIK_1] && oldKey[DIK_1] == 0)
+		{
+			pushKey1 = 1;
+		}
+
+		if (pushKey1 == 1)
 		{
 			commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 		}

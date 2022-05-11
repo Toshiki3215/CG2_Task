@@ -23,4 +23,9 @@
     <FxCompile Include="BasicVS.hlsl" />
     <FxCompile Include="BasicPS.hlsl" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="WindowsApp.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+  </ItemGroup>
 </Project>

@@ -380,6 +380,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		}, // (1行で書いたほうが見やすい)
 	};
 
+	// ---- パイプラインステートオブジェクト(PSO) ---- //
+
 	// グラフィックスパイプライン設定
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC pipelineDesc{};
 
@@ -394,8 +396,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	// ラスタライザの設定
 	pipelineDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE; // カリングしない
-	//pipelineDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID; // ポリゴン内塗りつぶし
-	pipelineDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME; //ワイヤーフレーム
+	pipelineDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID; // ポリゴン内塗りつぶし
 	pipelineDesc.RasterizerState.DepthClipEnable = true; // 深度クリッピングを有効に
 
 	// ブレンドステート
@@ -440,6 +441,67 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	assert(SUCCEEDED(result));
 
 
+	// ---- パイプラインステートオブジェクト_2 (PSO_2) ---- //
+
+	// グラフィックスパイプライン設定
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC pipelineDesc2{};
+
+	// シェーダーの設定
+	pipelineDesc2.VS.pShaderBytecode = vsBlob->GetBufferPointer();
+	pipelineDesc2.VS.BytecodeLength = vsBlob->GetBufferSize();
+	pipelineDesc2.PS.pShaderBytecode = psBlob->GetBufferPointer();
+	pipelineDesc2.PS.BytecodeLength = psBlob->GetBufferSize();
+
+	// サンプルマスクの設定
+	pipelineDesc2.SampleMask = D3D12_DEFAULT_SAMPLE_MASK; // 標準設定
+
+	// ラスタライザの設定
+	pipelineDesc2.RasterizerState.CullMode = D3D12_CULL_MODE_NONE; // カリングしない
+	pipelineDesc2.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME; //ワイヤーフレーム
+	pipelineDesc2.RasterizerState.DepthClipEnable = true; // 深度クリッピングを有効に
+
+	// ブレンドステート
+	pipelineDesc2.BlendState.RenderTarget[0].RenderTargetWriteMask
+		= D3D12_COLOR_WRITE_ENABLE_ALL; // RBGA全てのチャンネルを描画
+
+	// 頂点レイアウトの設定
+	pipelineDesc2.InputLayout.pInputElementDescs = inputLayout;
+	pipelineDesc2.InputLayout.NumElements = _countof(inputLayout);
+
+	// 図形の形状設定
+	pipelineDesc2.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+
+	// その他の設定
+	pipelineDesc2.NumRenderTargets = 1; // 描画対象は1つ
+	pipelineDesc2.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB; // 0~255指定のRGBA
+	pipelineDesc2.SampleDesc.Count = 1; // 1ピクセルにつき1回サンプリング
+
+	// ルートシグネチャ
+	ID3D12RootSignature* rootSignature2;
+
+	// ルートシグネチャの設定
+	D3D12_ROOT_SIGNATURE_DESC rootSignatureDesc2{};
+	rootSignatureDesc2.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+
+	// ルートシグネチャのシリアライズ
+	ID3DBlob* rootSigBlob2 = nullptr;
+	result = D3D12SerializeRootSignature(&rootSignatureDesc2, D3D_ROOT_SIGNATURE_VERSION_1_0,
+		&rootSigBlob2, &errorBlob);
+	assert(SUCCEEDED(result));
+	result = device->CreateRootSignature(0, rootSigBlob2->GetBufferPointer(), rootSigBlob2->GetBufferSize(),
+		IID_PPV_ARGS(&rootSignature2));
+	assert(SUCCEEDED(result));
+	rootSigBlob2->Release();
+
+	// パイプラインにルートシグネチャをセット
+	pipelineDesc2.pRootSignature = rootSignature2;
+
+	// パイプランステートの生成
+	ID3D12PipelineState* pipelineState2 = nullptr;
+	result = device->CreateGraphicsPipelineState(&pipelineDesc2, IID_PPV_ARGS(&pipelineState2));
+	assert(SUCCEEDED(result));
+
+
 	// --- 描画初期化処理　ここまで --- //
 
 	//ゲームループ
@@ -468,18 +530,18 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		//全キーの入力状態を取得する
 		BYTE key[256] = {};
 		keyboard->GetDeviceState(sizeof(key), key);
+		BYTE oldKey[256] = {};
+		//keyboard->GetDeviceState(sizeof(oldKey), oldKey);
 
-		//bool pushKey(uint8_t key[DIK_1]);
+		for (int i = 0; i < 256; i++)
+		{
+			oldKey[i] = key[i];
+		}
 
 		//数字の0キーが押されていたら
 		if (key[DIK_0])
 		{
 			OutputDebugStringA("Hit 0\n"); //出力ウィンドウに「Hit 0」と表示
-		}
-
-		if (key[DIK_2])
-		{
-			pipelineDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
 		}
 
 		// バックバッファの番号を取得(2つなので0番か1番)
@@ -503,7 +565,21 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 
 		//スペースキーが押されていたら
-		if (key[DIK_SPACE])
+
+		bool pushKeySpace = 0;
+
+		if (key[DIK_SPACE] && oldKey[DIK_SPACE])
+		{
+			if (pushKeySpace == 1)
+			{
+				pushKeySpace = 0;
+			}else if (pushKeySpace == 0)
+			{
+				pushKeySpace = 1;
+			}
+		}
+
+		if (pushKeySpace == 1)
 		{
 			FLOAT clearColor[] = { 1.0f,0.3f,0.3f,0.0f };
 			commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
@@ -540,6 +616,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		// パイプラインステートとルートシグネチャの設定コマンド
 		commandList->SetPipelineState(pipelineState);
 		commandList->SetGraphicsRootSignature(rootSignature);
+		
+		if (key[DIK_2])
+		{
+			commandList->SetPipelineState(pipelineState2);
+			commandList->SetGraphicsRootSignature(rootSignature2);
+		}
 
 		// プリミティブ形状の設定コマンド
 		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // 三角形リスト

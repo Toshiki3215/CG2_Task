@@ -506,6 +506,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	// --- 描画初期化処理　ここまで --- //
 
+	bool pushKeySpace = 0;
+
+	bool pushKey1 = 0;
+
+	bool pushKey2 = 0;
+
 	//ゲームループ
 	while (true)
 	{
@@ -570,11 +576,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 		//スペースキーが押されていたら
 
-		bool pushKeySpace = 0;
-
 		if (key[DIK_SPACE] && oldKey[DIK_SPACE] == 0)
 		{
-			pushKeySpace = 1;
+			if (pushKeySpace == 0)
+			{
+				pushKeySpace = 1;
+			}
+			else if (pushKeySpace == 1)
+			{
+				pushKeySpace = 0;
+			}
 		}
 
 		if (pushKeySpace == 1)
@@ -614,12 +625,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		// パイプラインステートとルートシグネチャの設定コマンド
 		commandList->SetPipelineState(pipelineState);
 		commandList->SetGraphicsRootSignature(rootSignature);
-		
-		bool pushKey2 = 0;
 
 		if (key[DIK_2] && oldKey[DIK_2] == 0)
 		{
-			pushKey2 = 1;
+			if (pushKey2 == 0)
+			{
+				pushKey2 = 1;
+			}
+			else
+			{
+				pushKey2 = 0;
+			}
 		}
 
 		if (pushKey2 == 1)
@@ -631,11 +647,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		// プリミティブ形状の設定コマンド
 		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // 三角形リスト
 
-		bool pushKey1 = 0;
-
 		if (key[DIK_1] && oldKey[DIK_1] == 0)
 		{
-			pushKey1 = 1;
+			if (pushKey1 == 0)
+			{
+				pushKey1 = 1;
+			}
+			else
+			{
+				pushKey1 = 0;
+			}
 		}
 
 		if (pushKey1 == 1)

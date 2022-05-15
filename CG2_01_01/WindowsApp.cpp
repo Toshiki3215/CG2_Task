@@ -17,17 +17,8 @@
 //	//標準のメッセージ処理を行う
 //	return DefWindowProc(hwnd, msg, wparam, lparam);
 //}
-
-//Widowsアプリでのエントリーポイント(main関数)
-//int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
-//{
-//	//コンソールへの文字出力
-//	OutputDebugStringA("Hello,DirectX!!!\n");
 //
-//	//ウィンドウサイズ
-//	const int window_width = 1280;	//横幅
-//	const int window_height = 720;	//縦幅
-//
+////Widowsアプリでのエントリーポイント(main関数)
 //	//ウィンドウクラスの設定
 //	WNDCLASSEX w{};
 //	w.cbSize = sizeof(WNDCLASSEX);
@@ -60,6 +51,3 @@
 //
 //	//ウィンドウを表示状態にする
 //	ShowWindow(hwnd, SW_SHOW);
-//
-//	MSG msg{};//メッセージ
-//}

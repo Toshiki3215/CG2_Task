@@ -397,8 +397,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	pipelineDesc.RasterizerState.DepthClipEnable = true; // 深度クリッピングを有効に
 
 	// ブレンドステート
-	pipelineDesc.BlendState.RenderTarget[0].RenderTargetWriteMask
-		= D3D12_COLOR_WRITE_ENABLE_ALL; // RBGA全てのチャンネルを描画
+	//pipelineDesc.BlendState.RenderTarget[0].RenderTargetWriteMask
+	//	= D3D12_COLOR_WRITE_ENABLE_ALL; // RBGA全てのチャンネルを描画
+
+	//RGBA全てのチャンネルを描画(動作は上と同じ)
+	D3D12_RENDER_TARGET_BLEND_DESC& blenddesc = pipelineDesc.BlendState.RenderTarget[0];
+	blenddesc.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 
 	// 頂点レイアウトの設定
 	pipelineDesc.InputLayout.pInputElementDescs = inputLayout;
@@ -437,15 +441,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	result = device->CreateGraphicsPipelineState(&pipelineDesc, IID_PPV_ARGS(&pipelineState));
 	assert(SUCCEEDED(result));
 
-
-
 	// --- 描画初期化処理　ここまで --- //
 
 	//ゲームループ
 	while (true)
 	{
 		// ----- ウィンドウメッセージ処理 ----- //
-		
+
 		//メッセージがあるか？
 		if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
 		{
@@ -539,6 +541,18 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 		// 描画コマンド
 		commandList->DrawInstanced(_countof(vertices), 1, 0, 0); // 全ての頂点を使って描画
+
+		//ブレンドを有効にする
+		blenddesc.BlendEnable = true;
+
+		//加算
+		blenddesc.BlendOpAlpha = D3D12_BLEND_OP_ADD;
+
+		//ソースの値を100%使う
+		blenddesc.SrcBlendAlpha = D3D12_BLEND_ONE;
+
+		//デストの値を0%使う
+		blenddesc.DestBlendAlpha = D3D12_BLEND_ZERO;
 
 		//4.描画コマンド　ここまで
 

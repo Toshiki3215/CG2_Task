@@ -554,6 +554,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		//デストの値を0%使う
 		blenddesc.DestBlendAlpha = D3D12_BLEND_ZERO;
 
+
 		//4.描画コマンド　ここまで
 
 		// 5.リソースバリアを戻す

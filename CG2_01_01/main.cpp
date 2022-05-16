@@ -416,12 +416,33 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	pipelineDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB; // 0~255指定のRGBA
 	pipelineDesc.SampleDesc.Count = 1; // 1ピクセルにつき1回サンプリング
 
+	//ルートパラメータの設定
+	D3D12_ROOT_PARAMETER rootParam = {};
+
+	//定数バッファビュー
+	rootParam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	
+	//定数バッファ番号
+	rootParam.Descriptor.ShaderRegister = 0;
+
+	//デフォルト値
+	rootParam.Descriptor.RegisterSpace = 0;
+
+	//全てのシェーダから見える
+	rootParam.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
 	// ルートシグネチャ
 	ID3D12RootSignature* rootSignature;
 
 	// ルートシグネチャの設定
 	D3D12_ROOT_SIGNATURE_DESC rootSignatureDesc{};
 	rootSignatureDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+
+	//ルートパラメータの先頭アドレス
+	rootSignatureDesc.pParameters = &rootParam;
+
+	//ルートパラメータ数
+	rootSignatureDesc.NumParameters = 1;
 
 	// ルートシグネチャのシリアライズ
 	ID3DBlob* rootSigBlob = nullptr;
@@ -440,6 +461,58 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	ID3D12PipelineState* pipelineState = nullptr;
 	result = device->CreateGraphicsPipelineState(&pipelineDesc, IID_PPV_ARGS(&pipelineState));
 	assert(SUCCEEDED(result));
+
+	//定数バッファ用データ構造体(マテリアル)
+	struct ConstBufferDataMaterial
+	{
+		//色(RGBA)
+		XMFLOAT4 color;
+	};
+
+	//ヒープ設定
+	D3D12_HEAP_PROPERTIES cbHeapProp{};
+
+	//GPUへの転送用
+	cbHeapProp.Type = D3D12_HEAP_TYPE_UPLOAD;
+
+	//リソース設定
+	D3D12_RESOURCE_DESC cbResourceDesc{};
+	cbResourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	//256バイトアラインメント
+	cbResourceDesc.Width = (sizeof(ConstBufferDataMaterial) + 0xff) & ~0xff;
+	cbResourceDesc.Height = 1;
+	cbResourceDesc.DepthOrArraySize = 1;
+	cbResourceDesc.MipLevels = 1;
+	cbResourceDesc.SampleDesc.Count = 1;
+	cbResourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+
+	ID3D12Resource* constBuffMaterial = nullptr;
+
+	//定数バッファの生成
+	result = device->CreateCommittedResource
+	(
+		//ヒープ設定
+		&cbHeapProp,
+		D3D12_HEAP_FLAG_NONE,
+		//リソース設定
+		&cbResourceDesc,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&constBuffMaterial)
+	);
+	assert(SUCCEEDED(result));
+
+	//定数バッファのマッピング
+	ConstBufferDataMaterial* constMapMaterial = nullptr;
+
+	//マッピング
+	result = constBuffMaterial->Map(0, nullptr, (void**)&constMapMaterial);
+	assert(SUCCEEDED(result));
+
+	//定数バッファにデータを転送する
+	//値を書き込むと自動的に転送される
+	constMapMaterial->color = XMFLOAT4(1, 0, 0, 0.5f);  //RGBAで半透明の赤
+
 
 	// --- 描画初期化処理　ここまで --- //
 
@@ -539,6 +612,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		// 頂点バッファビューの設定コマンド
 		commandList->IASetVertexBuffers(0, 1, &vbView);
 
+		//定数バッファビュー(CBV)の設定コマンド
+		commandList->SetGraphicsRootConstantBufferView(0, constBuffMaterial->GetGPUVirtualAddress());
+
 		// 描画コマンド
 		commandList->DrawInstanced(_countof(vertices), 1, 0, 0); // 全ての頂点を使って描画
 
@@ -554,6 +630,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		//デストの値を0%使う
 		blenddesc.DestBlendAlpha = D3D12_BLEND_ZERO;
 
+		//色を徐々に変える(チャレンジ問題_03_02)
+		if (constMapMaterial->color.x > 0)
+		{
+			constMapMaterial->color.x -= 0.005f;
+			constMapMaterial->color.y += 0.005f;
+		}
 
 		//4.描画コマンド　ここまで
 

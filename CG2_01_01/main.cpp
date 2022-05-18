@@ -1,4 +1,4 @@
-﻿#include<Windows.h>
+﻿#include"WindowsApp.h"
 #include<d3d12.h>
 #include<dxgi1_6.h>
 #include<cassert>
@@ -18,68 +18,14 @@ using namespace DirectX;
 #pragma comment(lib,"dinput8.lib")
 #pragma comment(lib,"dxguid.lib")
 
-//ウィンドウプロシージャ
-LRESULT WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
-{
-	//メッセージに応じてゲーム固有の処理を行う
-	switch (msg)
-	{
-		//ウィンドウが破壊された
-	case WM_DESTROY:
-
-		//osに対して、アプリの終了を伝える
-		PostQuitMessage(0);
-		return 0;
-	}
-
-	//標準のメッセージ処理を行う
-	return DefWindowProc(hwnd, msg, wparam, lparam);
-}
-
 //Widowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
-	//コンソールへの文字出力
-	OutputDebugStringA("Hello,DirectX!!!\n");
+	WindowsApp winApp;
 
-	//ウィンドウサイズ
-	const int window_width = 1280;	//横幅
-	const int window_height = 720;	//縦幅
+	winApp.createWin();
 
-	//ウィンドウクラスの設定
-	WNDCLASSEX w{};
-	w.cbSize = sizeof(WNDCLASSEX);
-	w.lpfnWndProc = (WNDPROC)WindowProc; //ウィンドウプロシージャを設定
-	w.lpszClassName = L"DirectXGame";	//ウィンドウクラス名
-	w.hInstance = GetModuleHandle(nullptr);//ウィンドウハンドル
-	w.hCursor = LoadCursor(NULL, IDC_ARROW);//カーソル指定
-
-	//ウィンドウクラスをosに登録する
-	RegisterClassEx(&w);
-
-	//ウィンドウサイズ{x座標,y座標,横幅,縦幅}
-	RECT wrc = { 0,0,window_width,window_height };
-
-	//自動でサイズを補正する
-	AdjustWindowRect(&wrc, WS_OVERLAPPEDWINDOW, false);
-
-	//ウィンドウオブジェクトの生成
-	HWND hwnd = CreateWindow(w.lpszClassName,//クラス名
-		L"DirectXGame",//タイトルバーの文字
-		WS_OVERLAPPEDWINDOW,//標準的なウィンドウスタイル
-		CW_USEDEFAULT,//表示x座標(osに任せる)
-		CW_USEDEFAULT,//表示y座標(osに任せる)
-		wrc.right - wrc.left,//ウィンドウ横幅
-		wrc.bottom - wrc.top,//ウィンドウ縦幅
-		nullptr,//親ウィンドウハンドル
-		nullptr,//メニューハンドル
-		w.hInstance,//呼び出しアプリケーションハンドル
-		nullptr);//オプション
-
-	//ウィンドウを表示状態にする
-	ShowWindow(hwnd, SW_SHOW);
-
-	MSG msg{};//メッセージ
+	//MSG msg{};//メッセージ
 
 	// --- DirectX初期化処理　ここから --- //
 
@@ -186,7 +132,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 
 	// スワップチェーンの生成
-	result = dxgiFactory->CreateSwapChainForHwnd(commandQueue, hwnd, &swapChainDesc, nullptr, nullptr, (IDXGISwapChain1**)&swapChain);
+	result = dxgiFactory->CreateSwapChainForHwnd(commandQueue, winApp.hwnd, &swapChainDesc, nullptr, nullptr, (IDXGISwapChain1**)&swapChain);
 	assert(SUCCEEDED(result));
 
 	// デスクリプタヒープの設定
@@ -231,7 +177,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	//DirectInputの初期化
 	IDirectInput8* directInput = nullptr;
-	result = DirectInput8Create(w.hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&directInput, nullptr);
+	result = DirectInput8Create(winApp.w.hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&directInput, nullptr);
 	assert(SUCCEEDED(result));
 
 	//キーボードデバイスの生成
@@ -244,7 +190,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	assert(SUCCEEDED(result));
 
 	//排他制御レベルのセット
-	result = keyboard->SetCooperativeLevel(hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
+	result = keyboard->SetCooperativeLevel(winApp.hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
 	assert(SUCCEEDED(result));
 
 	// --- DirectX初期化処理　ここまで --- //
@@ -525,14 +471,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		// ----- ウィンドウメッセージ処理 ----- //
 
 		//メッセージがあるか？
-		if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
+		if (PeekMessage(&winApp.msg, nullptr, 0, 0, PM_REMOVE))
 		{
-			TranslateMessage(&msg);//キー入力メッセージの処理
-			DispatchMessage(&msg);//プロシージャにメッセージを送る
+			TranslateMessage(&winApp.msg);//キー入力メッセージの処理
+			DispatchMessage(&winApp.msg);//プロシージャにメッセージを送る
 		}
 
 		//✕ボタンで終了メッセージが来たらゲームループを抜ける
-		if (msg.message == WM_QUIT)
+		if (winApp.msg.message == WM_QUIT)
 		{
 			break;
 		}
@@ -585,8 +531,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 		// ビューポート設定コマンド
 		D3D12_VIEWPORT viewport{};
-		viewport.Width = window_width;
-		viewport.Height = window_height;
+		viewport.Width = WindowsApp::window_width;
+		viewport.Height = WindowsApp::window_height;
 		viewport.TopLeftX = 0;
 		viewport.TopLeftY = 0;
 		viewport.MinDepth = 0.0f;
@@ -598,9 +544,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		// シザー矩形
 		D3D12_RECT scissorRect{};
 		scissorRect.left = 0; // 切り抜き座標左
-		scissorRect.right = scissorRect.left + window_width; // 切り抜き座標右
+		scissorRect.right = scissorRect.left + WindowsApp::window_width; // 切り抜き座標右
 		scissorRect.top = 0; // 切り抜き座標上
-		scissorRect.bottom = scissorRect.top + window_height; // 切り抜き座標下
+		scissorRect.bottom = scissorRect.top + WindowsApp::window_height; // 切り抜き座標下
 
 		// シザー矩形設定コマンドを、コマンドリストに積む
 		commandList->RSSetScissorRects(1, &scissorRect);
@@ -696,7 +642,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	}
 
 	//ウィンドウクラスを登録解除
-	UnregisterClass(w.lpszClassName, w.hInstance);
+	UnregisterClass(winApp.w.lpszClassName, winApp.w.hInstance);
 
 	return 0;
 }

@@ -200,12 +200,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	XMFLOAT3 vertices[] =
 	{
 		//三角形なので３つ分の座標(x,y,z)を指定する。2Dの場合、zは0固定
-		{-0.5f,-0.5f,0.0f},//左下
-		{+0.5f,-0.5f,0.0f},//右下
-		{-0.5f, 0.0f,0.0f},//左中
-		{+0.5f, 0.0f,0.0f},//右中
-		{-0.5f,+0.5f,0.0f},//左上
-		{+0.5f,+0.5f,0.0f},//右上
+		{-0.5f,-0.5f,0.0f},//左下 インデックス0
+		{-0.5f,+0.5f,0.0f},//左上 インデックス1
+		{+0.5f,-0.5f,0.0f},//右下 インデックス2
+		{+0.5f,+0.5f,0.0f},//右上 インデックス3
+	};
+
+	uint16_t indices[] =
+	{
+		0,1,2, //三角形1つ目
+		1,2,3, //三角形2つ目
 	};
 
 	//頂点データ全体のサイズ = 頂点データ一つ分のサイズ * 頂点データの要素数
@@ -325,6 +329,49 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0
 		}, // (1行で書いたほうが見やすい)
 	};
+
+	//インデックスデータ全体のサイズ
+	UINT sizeIB = static_cast<UINT>(sizeof(uint16_t) * _countof(indices));
+
+	//リソース設定
+	resDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	resDesc.Width = sizeIB; //インデックス情報が入る分のサイズ
+	resDesc.Height = 1;
+	resDesc.DepthOrArraySize = 1;
+	resDesc.MipLevels = 1;
+	resDesc.SampleDesc.Count = 1;
+	resDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+
+	//インデックスバッファの生成
+	ID3D12Resource* indexBuff = nullptr;
+	result = device->CreateCommittedResource
+	(
+		&heapProp, //ヒープ設定
+		D3D12_HEAP_FLAG_NONE,
+		&resDesc, //リソース設定
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&indexBuff)
+	);
+
+	//インデックスバッファをマッピング
+	uint16_t* indexMap = nullptr;
+	result = indexBuff->Map(0, nullptr, (void**)&indexMap);
+
+	//全てのインデックスに対して
+	for (int i = 0; i < _countof(indices); i++)
+	{
+		indexMap[i] = indices[i]; //インデックスをコピー
+	}
+
+	//マッピング解除
+	indexBuff->Unmap(0, nullptr);
+
+	//インデックスバッファビューの生成
+	D3D12_INDEX_BUFFER_VIEW ibView{};
+	ibView.BufferLocation = indexBuff->GetGPUVirtualAddress();
+	ibView.Format = DXGI_FORMAT_R16_UINT;
+	ibView.SizeInBytes = sizeIB;
 
 	// グラフィックスパイプライン設定
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC pipelineDesc{};
@@ -458,7 +505,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	//定数バッファにデータを転送する
 	//値を書き込むと自動的に転送される
-	constMapMaterial->color = XMFLOAT4(1, 0, 0, 0.5f);  //RGBAで半透明の赤
+	//constMapMaterial->color = XMFLOAT4(1, 0, 0, 0.5f);  //RGBAで半透明の赤
+	constMapMaterial->color = XMFLOAT4(1, 1, 1, 0.5f); //白
 
 
 	// --- 描画初期化処理　ここまで --- //
@@ -576,8 +624,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		//定数バッファビュー(CBV)の設定コマンド
 		commandList->SetGraphicsRootConstantBufferView(0, constBuffMaterial->GetGPUVirtualAddress());
 
+		//インデックスバッファビューの設定コマンド
+		commandList->IASetIndexBuffer(&ibView);
+
 		// 描画コマンド
-		commandList->DrawInstanced(_countof(vertices), 1, 0, 0); // 全ての頂点を使って描画
+		//commandList->DrawInstanced(_countof(vertices), 1, 0, 0); // 全ての頂点を使って描画
+		commandList->DrawIndexedInstanced(_countof(indices), 1, 0, 0,0);
 
 		//ブレンドを有効にする
 		blenddesc.BlendEnable = true;
@@ -591,12 +643,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		//デストの値を0%使う
 		blenddesc.DestBlendAlpha = D3D12_BLEND_ZERO;
 
-		//色を徐々に変える(チャレンジ問題_03_02)
-		if (constMapMaterial->color.x > 0)
+		// -- 色を徐々に変える(チャレンジ問題_03_02) -- //
+		/*if (constMapMaterial->color.x > 0)
 		{
 			constMapMaterial->color.x -= 0.005f;
 			constMapMaterial->color.y += 0.005f;
-		}
+		}*/
 
 		//4.描画コマンド　ここまで
 

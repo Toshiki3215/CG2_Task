@@ -25,8 +25,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	winApp.createWin();
 
-	//MSG msg{};//メッセージ
-
 	// --- DirectX初期化処理　ここから --- //
 
 #ifdef _DEBUG

@@ -1,7 +1,8 @@
 #pragma once
 #include<Windows.h>
 
-class WindowsApp {
+class WindowsApp
+{
 public:
 
 	//ウィンドウサイズ

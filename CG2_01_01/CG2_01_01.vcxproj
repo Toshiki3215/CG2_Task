@@ -139,6 +139,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="DirectXInitialize.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="WindowsApp.cpp" />
   </ItemGroup>

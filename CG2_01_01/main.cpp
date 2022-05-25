@@ -453,20 +453,71 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	pipelineDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB; // 0~255指定のRGBA
 	pipelineDesc.SampleDesc.Count = 1; // 1ピクセルにつき1回サンプリング
 
-	//ルートパラメータの設定
-	D3D12_ROOT_PARAMETER rootParam = {};
+	//デスクリプタレンジの設定
+	D3D12_DESCRIPTOR_RANGE descriptorRange{};
+	descriptorRange.NumDescriptors = 1;      //一度の描画に使うテクスチャが一枚なので１
+	descriptorRange.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+	descriptorRange.BaseShaderRegister = 0;  //テクスチャレジスタ0番
+	descriptorRange.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
+	// - ルートパラメータの設定 - //
+	D3D12_ROOT_PARAMETER rootParams[2] = {};
+
+	// 定数バッファ0番
 	//定数バッファビュー
-	rootParam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	rootParams[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 	
 	//定数バッファ番号
-	rootParam.Descriptor.ShaderRegister = 0;
+	rootParams[0].Descriptor.ShaderRegister = 0;
 
 	//デフォルト値
-	rootParam.Descriptor.RegisterSpace = 0;
+	rootParams[0].Descriptor.RegisterSpace = 0;
 
 	//全てのシェーダから見える
-	rootParam.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+	rootParams[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+	//テクスチャレジスタ0番
+	//種類
+	rootParams[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+
+	//デスクリプタレンジ
+	rootParams[1].DescriptorTable.pDescriptorRanges = &descriptorRange;
+
+	//デスクリプタレンジ数
+	rootParams[1].DescriptorTable.NumDescriptorRanges = 1;
+
+	//全てのシェーダから見える
+	rootParams[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+
+	//テクスチャサンプラーの設定
+	D3D12_STATIC_SAMPLER_DESC samplerDesc{};
+	
+	//横繰り返し(タイリング)
+	samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+
+	//縦繰り返し(タイリング)
+	samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+
+	//奥行繰り返し(タイリング)
+	samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+
+	//ボーダーの時は黒
+	samplerDesc.BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
+
+	//全てリニア補間
+	samplerDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+
+	//ミニマップ最大値
+	samplerDesc.MaxLOD = D3D12_FLOAT32_MAX;
+
+	//ミニマップ最小値
+	samplerDesc.MinLOD = 0.0f;
+
+	samplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+
+	//ピクセルシェーダからのみ使用可能
+	samplerDesc.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
 	// ルートシグネチャ
 	ID3D12RootSignature* rootSignature;
@@ -476,10 +527,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	rootSignatureDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
 	//ルートパラメータの先頭アドレス
-	rootSignatureDesc.pParameters = &rootParam;
+	rootSignatureDesc.pParameters = rootParams;
 
 	//ルートパラメータ数
-	rootSignatureDesc.NumParameters = 1;
+	rootSignatureDesc.NumParameters = _countof(rootParams);
+
+	rootSignatureDesc.pStaticSamplers = &samplerDesc;
+	rootSignatureDesc.NumStaticSamplers = 1;
 
 	// ルートシグネチャのシリアライズ
 	ID3DBlob* rootSigBlob = nullptr;
@@ -550,6 +604,100 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//値を書き込むと自動的に転送される
 	//constMapMaterial->color = XMFLOAT4(1, 0, 0, 0.5f);  //RGBAで半透明の赤
 	constMapMaterial->color = XMFLOAT4(1, 1, 1, 0.5f); //白
+
+	//横方向ピクセル数
+	const size_t textureWidth = 256;
+	//縦方向ピクセル数
+	const size_t textureHeight = 256;
+	//配列の要素数
+	const size_t imageDataCount = textureWidth * textureHeight;
+	//画像イメージデータ配列
+	XMFLOAT4* imageData = new XMFLOAT4[imageDataCount];  //※必ず後で開放する
+
+	//全ピクセルの色を初期化
+	for (size_t i = 0; i < imageDataCount; i++)
+	{
+		imageData[i].x = 1.0f;  //R
+		imageData[i].y = 0.0f;  //G
+		imageData[i].z = 0.0f;  //B
+		imageData[i].w = 1.0f;  //A
+	}
+
+	// --- テクスチャバッファ --- //
+	//ヒープ設定
+	D3D12_HEAP_PROPERTIES textureHeapProp{};
+	textureHeapProp.Type = D3D12_HEAP_TYPE_CUSTOM;
+	textureHeapProp.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_WRITE_BACK;
+	textureHeapProp.MemoryPoolPreference = D3D12_MEMORY_POOL_L0;
+
+	//リソース設定
+	D3D12_RESOURCE_DESC textureResourceDesc{};
+	textureResourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	textureResourceDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	textureResourceDesc.Width = textureWidth;   //幅
+	textureResourceDesc.Height = textureWidth;  //高さ
+	textureResourceDesc.DepthOrArraySize = 1;
+	textureResourceDesc.MipLevels = 1;
+	textureResourceDesc.SampleDesc.Count = 1;
+
+	//テクスチャバッファの生成
+	ID3D12Resource* texBuff = nullptr;
+	result = device->CreateCommittedResource
+	(
+		&textureHeapProp,
+		D3D12_HEAP_FLAG_NONE,
+		&textureResourceDesc,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&texBuff)
+	);
+
+	//テクスチャバッファにデータ送信
+	result = texBuff->WriteToSubresource
+	(
+		0,
+		//全領域へコピー
+		nullptr,
+		//元データアドレス
+		imageData,
+		//1ラインサイズ
+		sizeof(XMFLOAT4) * textureWidth,
+		//全サイズ
+		sizeof(XMFLOAT4) * imageDataCount
+	);
+
+	//元データ解放
+	delete[] imageData;
+
+	//SRVの最大個数
+	const size_t kMaxSRVCount = 2056;
+
+	//デスクリプタヒープの設定
+	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
+	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;  //シェーダから見えるように
+	srvHeapDesc.NumDescriptors = kMaxSRVCount;
+
+	//設定を元のSRV用デスクリプタヒープを生成
+	ID3D12DescriptorHeap* srvHeap = nullptr;
+	result = device->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&srvHeap));
+	assert(SUCCEEDED(result));
+
+	//SRVヒープの先頭ハンドルを取得
+	D3D12_CPU_DESCRIPTOR_HANDLE srvHandle = srvHeap->GetCPUDescriptorHandleForHeapStart();
+
+	//シェーダリソースビュー設定
+	//設定構造体
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+	//RGBA float
+	srvDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	//2Dテクスチャ
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Texture2D.MipLevels = 1;
+
+	//ハンドルの指す位置にシェーダーリソースビュー作成
+	device->CreateShaderResourceView(texBuff, &srvDesc, srvHandle);
 
 
 	// --- 描画初期化処理　ここまで --- //
@@ -667,11 +815,19 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		//定数バッファビュー(CBV)の設定コマンド
 		commandList->SetGraphicsRootConstantBufferView(0, constBuffMaterial->GetGPUVirtualAddress());
 
+		//SRVヒープの設定コマンド
+		commandList->SetDescriptorHeaps(1, &srvHeap);
+
+		//SRVヒープの先頭ハンドルを取得(SRVを指しているはず)
+		D3D12_GPU_DESCRIPTOR_HANDLE srvGpuHandle = srvHeap->GetGPUDescriptorHandleForHeapStart();
+
+		//SRVヒープの先頭にあるSRVをルートパラメータ1番に設定
+		commandList->SetGraphicsRootDescriptorTable(1, srvGpuHandle);
+
 		//インデックスバッファビューの設定コマンド
 		commandList->IASetIndexBuffer(&ibView);
 
 		// 描画コマンド
-		//commandList->DrawInstanced(_countof(vertices), 1, 0, 0); // 全ての頂点を使って描画
 		commandList->DrawIndexedInstanced(_countof(indices), 1, 0, 0,0);
 
 		//ブレンドを有効にする
@@ -686,12 +842,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		//デストの値を0%使う
 		blenddesc.DestBlendAlpha = D3D12_BLEND_ZERO;
 
-		// -- 色を徐々に変える(チャレンジ問題_03_02) -- //
-		/*if (constMapMaterial->color.x > 0)
-		{
-			constMapMaterial->color.x -= 0.005f;
-			constMapMaterial->color.y += 0.005f;
-		}*/
 
 		//4.描画コマンド　ここまで
 

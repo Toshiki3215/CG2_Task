@@ -15,6 +15,8 @@ using namespace DirectX;
 //Widowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
+
+	// ----- ウィンドウクラス ----- //
 	WindowsApp winApp;
 
 	winApp.createWin();
@@ -30,9 +32,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	}
 #endif
 
+	// ----- DirectX クラス ----- //
 	DirectXInitialize DXInit;
 
-	DXInit.createDX();
+	DXInit.createDX(winApp.hwnd);
 
 	//DirectInputの初期化
 	IDirectInput8* directInput = nullptr;

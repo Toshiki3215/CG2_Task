@@ -37,8 +37,6 @@ public:
 	ID3D12Fence* fence = nullptr;
 	UINT64 fenceVal = 0;
 
-	void createDX();
-
-	WindowsApp windowsApp;
+	void createDX(HWND hwnd);
 
 };

@@ -1,6 +1,6 @@
 #include "DirectXInitialize.h"
 
-void DirectXInitialize::createDX()
+void DirectXInitialize::createDX(HWND hwnd)
 {
 	//DXGIファクトリーの生成
 	result = CreateDXGIFactory(IID_PPV_ARGS(&dxgiFactory));
@@ -83,7 +83,7 @@ void DirectXInitialize::createDX()
 	swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 
 	// スワップチェーンの生成
-	result = dxgiFactory->CreateSwapChainForHwnd(commandQueue,windowsApp.hwnd, &swapChainDesc, nullptr, nullptr, (IDXGISwapChain1**)&swapChain);
+	result = dxgiFactory->CreateSwapChainForHwnd(commandQueue,hwnd, &swapChainDesc, nullptr, nullptr, (IDXGISwapChain1**)&swapChain);
 	assert(SUCCEEDED(result));
 
 	// デスクリプタヒープの設定

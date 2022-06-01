@@ -506,8 +506,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//並行投影行列の計算
 	constMapTransform->mat = XMMatrixOrthographicOffCenterLH
 	(
-		0.0f, 1.0f,
-		0.0f, 1.0f,
+		0.0f, 0.0f,
+		1.0f, 0.0f,
 		0.0f,1.0f
 	);
 

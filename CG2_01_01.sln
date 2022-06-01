@@ -3,29 +3,29 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.1.32328.378
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CG2_01_01", "CG2_01_01\CG2_01_01.vcxproj", "{CCD4A74A-FEA1-488C-BAFD-D5CF1B134E66}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CG2_01_01", "CG2_01_01.vcxproj", "{87A7754F-9212-4419-8EE0-9A7230BF0C33}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DirectXTex", "DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj", "{371B9FA9-4C90-4AC6-A123-ACED756D6C77}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
-		Debug|x86 = Debug|x86
 		Release|x64 = Release|x64
-		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{CCD4A74A-FEA1-488C-BAFD-D5CF1B134E66}.Debug|x64.ActiveCfg = Debug|x64
-		{CCD4A74A-FEA1-488C-BAFD-D5CF1B134E66}.Debug|x64.Build.0 = Debug|x64
-		{CCD4A74A-FEA1-488C-BAFD-D5CF1B134E66}.Debug|x86.ActiveCfg = Debug|Win32
-		{CCD4A74A-FEA1-488C-BAFD-D5CF1B134E66}.Debug|x86.Build.0 = Debug|Win32
-		{CCD4A74A-FEA1-488C-BAFD-D5CF1B134E66}.Release|x64.ActiveCfg = Release|x64
-		{CCD4A74A-FEA1-488C-BAFD-D5CF1B134E66}.Release|x64.Build.0 = Release|x64
-		{CCD4A74A-FEA1-488C-BAFD-D5CF1B134E66}.Release|x86.ActiveCfg = Release|Win32
-		{CCD4A74A-FEA1-488C-BAFD-D5CF1B134E66}.Release|x86.Build.0 = Release|Win32
+		{87A7754F-9212-4419-8EE0-9A7230BF0C33}.Debug|x64.ActiveCfg = Debug|x64
+		{87A7754F-9212-4419-8EE0-9A7230BF0C33}.Debug|x64.Build.0 = Debug|x64
+		{87A7754F-9212-4419-8EE0-9A7230BF0C33}.Release|x64.ActiveCfg = Release|x64
+		{87A7754F-9212-4419-8EE0-9A7230BF0C33}.Release|x64.Build.0 = Release|x64
+		{371B9FA9-4C90-4AC6-A123-ACED756D6C77}.Debug|x64.ActiveCfg = Debug|x64
+		{371B9FA9-4C90-4AC6-A123-ACED756D6C77}.Debug|x64.Build.0 = Debug|x64
+		{371B9FA9-4C90-4AC6-A123-ACED756D6C77}.Release|x64.ActiveCfg = Release|x64
+		{371B9FA9-4C90-4AC6-A123-ACED756D6C77}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {538622A4-2CE3-4E6E-B92E-A6CF97A807AA}
+		SolutionGuid = {883510FC-D94D-429E-8A43-64B1C4E12F31}
 	EndGlobalSection
 EndGlobal

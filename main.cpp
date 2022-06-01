@@ -1,6 +1,8 @@
 ﻿#include "WindowsApp.h"
 #include"DirectXInitialize.h"
 #include<DirectXMath.h>
+#include<DirectXTex.h>
+
 using namespace DirectX;
 
 #include<d3dcompiler.h>

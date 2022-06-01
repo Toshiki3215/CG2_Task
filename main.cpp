@@ -503,6 +503,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	constMapTransform->mat.r[3].m128_f32[0] = -1.0f;
 	constMapTransform->mat.r[3].m128_f32[1] =  1.0f;
 
+	////並行投影行列の計算
+	//constMapTransform->mat = XMMatrixOrthographicOffCenterLH
+	//(
+	//	0.0f, 1.0f,
+	//	0.0f, 1.0f,
+	//	0.0f,1.0f
+	//);
+
 	//定数バッファにデータを転送する
 	//値を書き込むと自動的に転送される
 	constMapMaterial->color = XMFLOAT4(1, 1, 1, 0.5f); //白

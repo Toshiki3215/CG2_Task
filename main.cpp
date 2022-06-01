@@ -440,23 +440,52 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//constMapMaterial->color = XMFLOAT4(1, 0, 0, 0.5f);  //RGBAで半透明の赤
 	constMapMaterial->color = XMFLOAT4(1, 1, 1, 0.5f); //白
 
-	//横方向ピクセル数
-	const size_t textureWidth = 256;
-	//縦方向ピクセル数
-	const size_t textureHeight = 256;
-	//配列の要素数
-	const size_t imageDataCount = textureWidth * textureHeight;
-	//画像イメージデータ配列
-	XMFLOAT4* imageData = new XMFLOAT4[imageDataCount];  //※必ず後で開放する
+	////横方向ピクセル数
+	//const size_t textureWidth = 256;
+	////縦方向ピクセル数
+	//const size_t textureHeight = 256;
+	////配列の要素数
+	//const size_t imageDataCount = textureWidth * textureHeight;
+	////画像イメージデータ配列
+	//XMFLOAT4* imageData = new XMFLOAT4[imageDataCount];  //※必ず後で開放する
 
-	//全ピクセルの色を初期化
-	for (size_t i = 0; i < imageDataCount; i++)
+	////全ピクセルの色を初期化
+	//for (size_t i = 0; i < imageDataCount; i++)
+	//{
+	//	imageData[i].x = 1.0f;  //R
+	//	imageData[i].y = 0.0f;  //G
+	//	imageData[i].z = 0.0f;  //B
+	//	imageData[i].w = 1.0f;  //A
+	//}
+
+	TexMetadata metadata{};
+	ScratchImage scratchImg{};
+
+	//WICテクスチャのロード
+	DXInit.result = LoadFromWICFile
+	(
+		L"Resources/texture.png",  //「Resources」フォルダの「texture.png」
+		WIC_FLAGS_NONE,
+		&metadata, scratchImg
+	);
+
+	ScratchImage mipChain{};
+
+	//ミニマップ生成
+	DXInit.result = GenerateMipMaps
+	(
+		scratchImg.GetImages(), scratchImg.GetImageCount(), scratchImg.GetMetadata(),
+		TEX_FILTER_DEFAULT, 0, mipChain
+	);
+
+	if (SUCCEEDED(DXInit.result))
 	{
-		imageData[i].x = 1.0f;  //R
-		imageData[i].y = 0.0f;  //G
-		imageData[i].z = 0.0f;  //B
-		imageData[i].w = 1.0f;  //A
+		scratchImg = std::move(mipChain);
+		metadata = scratchImg.GetMetadata();
 	}
+
+	//読み込んだディフューズテクスチャをSRGBとして扱う
+	metadata.format = MakeSRGB(metadata.format);
 
 	// --- テクスチャバッファ --- //
 	//ヒープ設定
@@ -468,11 +497,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//リソース設定
 	D3D12_RESOURCE_DESC textureResourceDesc{};
 	textureResourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-	textureResourceDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-	textureResourceDesc.Width = textureWidth;   //幅
-	textureResourceDesc.Height = textureWidth;  //高さ
-	textureResourceDesc.DepthOrArraySize = 1;
-	textureResourceDesc.MipLevels = 1;
+	textureResourceDesc.Format = metadata.format;
+	textureResourceDesc.Width = metadata.width;   //幅
+	textureResourceDesc.Height = (UINT)metadata.height;  //高さ
+	textureResourceDesc.DepthOrArraySize = (UINT16)metadata.arraySize;
+	textureResourceDesc.MipLevels = (UINT16)metadata.mipLevels;
 	textureResourceDesc.SampleDesc.Count = 1;
 
 	//テクスチャバッファの生成
@@ -487,22 +516,27 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		IID_PPV_ARGS(&texBuff)
 	);
 
-	//テクスチャバッファにデータ送信
-	DXInit.result = texBuff->WriteToSubresource
-	(
-		0,
-		//全領域へコピー
-		nullptr,
-		//元データアドレス
-		imageData,
-		//1ラインサイズ
-		sizeof(XMFLOAT4) * textureWidth,
-		//全サイズ
-		sizeof(XMFLOAT4) * imageDataCount
-	);
+	//全ミニマップについて
+	for (size_t i = 0; i < metadata.mipLevels; i++)
+	{
+		//ミニマップレベルを指定してイメージを取得
+		const Image* img = scratchImg.GetImage(i, 0, 0);
 
-	//元データ解放
-	delete[] imageData;
+		//テクスチャバッファにデータ転送
+		DXInit.result = texBuff->WriteToSubresource
+		(
+			(UINT)i,
+			//全領域へコピー
+			nullptr, 
+			//元データアドレス
+			img->pixels,
+			//1ラインサイズ
+			(UINT)img->rowPitch,
+			//1枚サイズ
+			(UINT)img->slicePitch
+		);
+		assert(SUCCEEDED(DXInit.result));
+	}
 
 	//SRVの最大個数
 	const size_t kMaxSRVCount = 2056;
@@ -524,12 +558,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//シェーダリソースビュー設定
 	//設定構造体
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+
 	//RGBA float
-	srvDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	srvDesc.Format = resDesc.Format;
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+
 	//2Dテクスチャ
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-	srvDesc.Texture2D.MipLevels = 1;
+	srvDesc.Texture2D.MipLevels = resDesc.MipLevels;
 
 	//ハンドルの指す位置にシェーダーリソースビュー作成
 	DXInit.device->CreateShaderResourceView(texBuff, &srvDesc, srvHandle);

@@ -72,10 +72,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	Vertex vertices[] =
 	{
 		//  x     y     z      u    v
-		{{  0.0f,100.0f, 0.0f},{0.0f,1.0f}},
-		{{  0.0f,  0.0f, 0.0f},{0.0f,0.0f}},
-		{{100.0f,100.0f, 0.0f},{1.0f,1.0f}},
-		{{100.0f,  0.0f, 0.0f},{1.0f,0.0f}},
+		{{  -50.0f, -50.0f, 50.0f},{0.0f,1.0f}},
+		{{  -50.0f,  50.0f, 50.0f},{0.0f,0.0f}},
+		{{   50.0f, -50.0f, 50.0f},{1.0f,1.0f}},
+		{{   50.0f,  50.0f, 50.0f},{1.0f,0.0f}},
 	};
 
 	//インデックスデータ
@@ -496,9 +496,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	assert(SUCCEEDED(DXInit.result));
 
 	//単位行列を代入
-	constMapTransform->mat = XMMatrixIdentity();
+	/*constMapTransform->mat = XMMatrixIdentity();
 
-	/*constMapTransform->mat.r[0].m128_f32[0] =  2.0f / winApp.window_width;
+	constMapTransform->mat.r[0].m128_f32[0] =  2.0f / winApp.window_width;
 	constMapTransform->mat.r[1].m128_f32[1] = -2.0f / winApp.window_height;
 	constMapTransform->mat.r[3].m128_f32[0] = -1.0f;
 	constMapTransform->mat.r[3].m128_f32[1] =  1.0f;*/
@@ -506,10 +506,54 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//並行投影行列の計算
 	constMapTransform->mat = XMMatrixOrthographicOffCenterLH
 	(
-		0.0f, 0.0f,
-		1.0f, 0.0f,
-		0.0f,1.0f
+		 0.0f, winApp.window_width,
+		winApp.window_height, 0.0f,
+		 0.0f,  1.0f
 	);
+
+	/*XMMATRIX oldVer = XMMatrixIdentity();
+
+	oldVer.r[0].m128_f32[0] = 2.0f / winApp.window_width;
+	oldVer.r[1].m128_f32[1] = -2.0f / winApp.window_height;
+	oldVer.r[3].m128_f32[0] = -1.0f;
+	oldVer.r[3].m128_f32[1] =  1.0f;
+	
+	XMMATRIX newVer = XMMatrixOrthographicOffCenterLH
+	(
+		-1.0f, 1.0f,
+		-1.0f, 1.0f,
+		0.0f, 1.0f
+	);*/
+
+	//透視投影行列の計算
+	
+	//constMapTransform->mat = XMMatrixPerspectiveFovLH
+	//(
+	//	//上下が画角45度
+	//	XMConvertToRadians(45.0f),  
+
+	//	//アスペクト比(画面横幅 / 画面縦幅)
+	//	(float)winApp.window_width / winApp.window_height,
+
+	//	//前幅,奥幅
+	//	0.1f, 1000.0f
+	//);
+
+	//射影変換行列(透視投影)
+	XMMATRIX matProjection = XMMatrixPerspectiveFovLH
+	(
+		//上下が画角45度
+		XMConvertToRadians(45.0f),
+
+		//アスペクト比(画面横幅 / 画面縦幅)
+		(float)winApp.window_width / winApp.window_height,
+
+		//前幅,奥幅
+		0.1f, 1000.0f
+	);
+
+	//定数バッファに転送
+	constMapTransform->mat = matProjection;
 
 	//定数バッファにデータを転送する
 	//値を書き込むと自動的に転送される

@@ -72,10 +72,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	Vertex vertices[] =
 	{
 		//  x     y     z      u    v
-		{{  -50.0f, -50.0f, 50.0f},{0.0f,1.0f}},
-		{{  -50.0f,  50.0f, 50.0f},{0.0f,0.0f}},
-		{{   50.0f, -50.0f, 50.0f},{1.0f,1.0f}},
-		{{   50.0f,  50.0f, 50.0f},{1.0f,0.0f}},
+		{{  -50.0f, -50.0f, 0.0f},{0.0f,1.0f}},
+		{{  -50.0f,  50.0f, 0.0f},{0.0f,0.0f}},
+		{{   50.0f, -50.0f, 0.0f},{1.0f,1.0f}},
+		{{   50.0f,  50.0f, 0.0f},{1.0f,0.0f}},
 	};
 
 	//インデックスデータ
@@ -495,6 +495,23 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	DXInit.result = constBuffMaterial->Map(0, nullptr, (void**)&constMapMaterial);
 	assert(SUCCEEDED(DXInit.result));
 
+	//ビュー変換行列
+	XMMATRIX matView;
+
+	//視点座標
+	XMFLOAT3 eye(0, 200, -100);
+
+	//注視点座標
+	XMFLOAT3 target(0, 0, 0);
+
+	//上方向ベクトル
+	XMFLOAT3 up(0, 1, 0);
+
+	matView = XMMatrixLookAtLH(XMLoadFloat3(&eye), XMLoadFloat3(&target), XMLoadFloat3(&up));
+
+	//カメラの回転角
+	float angle = 0.0f;
+
 	//単位行列を代入
 	/*constMapTransform->mat = XMMatrixIdentity();
 
@@ -553,7 +570,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	);
 
 	//定数バッファに転送
-	constMapTransform->mat = matProjection;
+	constMapTransform->mat = matView * matProjection;
+	//constMapTransform->mat = matProjection;
 
 	//定数バッファにデータを転送する
 	//値を書き込むと自動的に転送される
@@ -709,6 +727,30 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 		// バックバッファの番号を取得(2つなので0番か1番)
 		UINT bbIndex = DXInit.swapChain->GetCurrentBackBufferIndex();
+
+
+		if (key[DIK_D] || key[DIK_A])
+		{
+			if (key[DIK_D])
+			{
+				angle += XMConvertToRadians(1.0f);
+			}else if (key[DIK_A])
+			{
+				angle -= XMConvertToRadians(1.0f);
+			}
+
+			//angleラジアンだけY軸まわりに回転。半径は-100
+			eye.x = -100 * sinf(angle);
+			eye.z = -100 * cosf(angle);
+
+			//ビュー変換行列を作り直す
+			matView = XMMatrixLookAtLH(XMLoadFloat3(&eye), XMLoadFloat3(&target), XMLoadFloat3(&up));
+
+		}
+
+		//定数バッファに転送
+		constMapTransform->mat = matView * matProjection;
+
 
 		// 1.リソースバリアで書き込み可能に変更
 		D3D12_RESOURCE_BARRIER barrierDesc{};

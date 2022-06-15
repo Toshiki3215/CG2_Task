@@ -495,11 +495,43 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	DXInit.result = constBuffMaterial->Map(0, nullptr, (void**)&constMapMaterial);
 	assert(SUCCEEDED(DXInit.result));
 
+	//ワールド変換行列
+	XMMATRIX matWorld;
+
+	//スケーリング行列
+	XMMATRIX matScale;
+
+	//スケーリング倍率
+	XMFLOAT3 scale = { 1.0f,1.0f,1.0f };
+
+	matScale = XMMatrixScaling(scale.x,scale.y,scale.z);
+
+
+	//回転行列
+	XMMATRIX matRot;
+
+	//回転角
+	XMFLOAT3 rotation = { 0.0f,0.0f,0.0f };
+
+	matRot = XMMatrixIdentity();
+
+	//Z軸まわりに0度回転
+	matRot *= XMMatrixRotationZ(XMConvertToRadians(rotation.z));
+
+	//X軸まわりに15度回転
+	matRot *= XMMatrixRotationX(XMConvertToRadians(rotation.x));
+
+	//Y軸まわりに45度回転
+	matRot *= XMMatrixRotationY(XMConvertToRadians(rotation.y));
+
+	//座標
+	XMFLOAT3 position = { 0.0f,0.0f,0.0f };
+
 	//ビュー変換行列
 	XMMATRIX matView;
 
 	//視点座標
-	XMFLOAT3 eye(0, 200, -100);
+	XMFLOAT3 eye(0, 0, -100);
 
 	//注視点座標
 	XMFLOAT3 target(0, 0, 0);
@@ -512,14 +544,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//カメラの回転角
 	float angle = 0.0f;
 
-	//単位行列を代入
-	/*constMapTransform->mat = XMMatrixIdentity();
-
-	constMapTransform->mat.r[0].m128_f32[0] =  2.0f / winApp.window_width;
-	constMapTransform->mat.r[1].m128_f32[1] = -2.0f / winApp.window_height;
-	constMapTransform->mat.r[3].m128_f32[0] = -1.0f;
-	constMapTransform->mat.r[3].m128_f32[1] =  1.0f;*/
-
 	//並行投影行列の計算
 	constMapTransform->mat = XMMatrixOrthographicOffCenterLH
 	(
@@ -527,34 +551,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		winApp.window_height, 0.0f,
 		 0.0f,  1.0f
 	);
-
-	/*XMMATRIX oldVer = XMMatrixIdentity();
-
-	oldVer.r[0].m128_f32[0] = 2.0f / winApp.window_width;
-	oldVer.r[1].m128_f32[1] = -2.0f / winApp.window_height;
-	oldVer.r[3].m128_f32[0] = -1.0f;
-	oldVer.r[3].m128_f32[1] =  1.0f;
-	
-	XMMATRIX newVer = XMMatrixOrthographicOffCenterLH
-	(
-		-1.0f, 1.0f,
-		-1.0f, 1.0f,
-		0.0f, 1.0f
-	);*/
-
-	//透視投影行列の計算
-	
-	//constMapTransform->mat = XMMatrixPerspectiveFovLH
-	//(
-	//	//上下が画角45度
-	//	XMConvertToRadians(45.0f),  
-
-	//	//アスペクト比(画面横幅 / 画面縦幅)
-	//	(float)winApp.window_width / winApp.window_height,
-
-	//	//前幅,奥幅
-	//	0.1f, 1000.0f
-	//);
 
 	//射影変換行列(透視投影)
 	XMMATRIX matProjection = XMMatrixPerspectiveFovLH
@@ -568,10 +564,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		//前幅,奥幅
 		0.1f, 1000.0f
 	);
-
-	//定数バッファに転送
-	constMapTransform->mat = matView * matProjection;
-	//constMapTransform->mat = matProjection;
 
 	//定数バッファにデータを転送する
 	//値を書き込むと自動的に転送される
@@ -728,13 +720,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		// バックバッファの番号を取得(2つなので0番か1番)
 		UINT bbIndex = DXInit.swapChain->GetCurrentBackBufferIndex();
 
-
+		//回転
 		if (key[DIK_D] || key[DIK_A])
 		{
 			if (key[DIK_D])
 			{
 				angle += XMConvertToRadians(1.0f);
-			}else if (key[DIK_A])
+			}
+			else if (key[DIK_A])
 			{
 				angle -= XMConvertToRadians(1.0f);
 			}
@@ -748,8 +741,46 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 		}
 
+		//移動
+		if (key[DIK_UP] || key[DIK_DOWN] || key[DIK_RIGHT] || key[DIK_LEFT])
+		{
+			//座標を移動する処理(Z座標)
+			if (key[DIK_UP])
+			{
+				position.z += 1.0f;
+			}
+			else if (key[DIK_DOWN])
+			{
+				position.z -= 1.0f;
+			}
+			else if (key[DIK_RIGHT])
+			{
+				position.x += 1.0f;
+			}
+			else if (key[DIK_LEFT])
+			{
+				position.x -= 1.0f;
+			}
+		}
+
+		//平行移動行列
+		XMMATRIX matTrans;
+
+		matTrans = XMMatrixTranslation(position.x, position.y, position.z);
+
+		matWorld = XMMatrixIdentity();
+
+		//ワールド行列にスケーリングを反映
+		matWorld *= matScale;
+
+		//ワールド行列に回転を反映
+		matWorld *= matRot;
+
+		//ワールド行列に平行移動を反映
+		matWorld *= matTrans;
+
 		//定数バッファに転送
-		constMapTransform->mat = matView * matProjection;
+		constMapTransform->mat = matWorld * matView * matProjection;
 
 
 		// 1.リソースバリアで書き込み可能に変更

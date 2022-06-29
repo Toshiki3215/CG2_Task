@@ -73,40 +73,40 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	{
 		//  x     y     z      u    v
 		//前
-		{{  -5.0f, -5.0f, -5.0f},{0.0f,1.0f}},
-		{{  -5.0f,  5.0f, -5.0f},{0.0f,0.0f}},
-		{{   5.0f, -5.0f, -5.0f},{1.0f,1.0f}},
-		{{   5.0f,  5.0f, -5.0f},{1.0f,0.0f}},
+		{{  -5.0f, -5.0f, -5.0f},{0.0f,1.0f}},  //左下
+		{{  -5.0f,  5.0f, -5.0f},{0.0f,0.0f}},  //左上
+		{{   5.0f, -5.0f, -5.0f},{1.0f,1.0f}},  //右下
+		{{   5.0f,  5.0f, -5.0f},{1.0f,0.0f}},  //右上
 
 		//後
-		{{  -5.0f, -5.0f,  5.0f},{0.0f,1.0f}},
-		{{  -5.0f,  5.0f,  5.0f},{0.0f,0.0f}},
-		{{   5.0f, -5.0f,  5.0f},{1.0f,1.0f}},
-		{{   5.0f,  5.0f,  5.0f},{1.0f,0.0f}},
+		{{  -5.0f, -5.0f,  5.0f},{0.0f,1.0f}},  //左下
+		{{  -5.0f,  5.0f,  5.0f},{0.0f,0.0f}},	//左上
+		{{   5.0f, -5.0f,  5.0f},{1.0f,1.0f}},	//右下
+		{{   5.0f,  5.0f,  5.0f},{1.0f,0.0f}},	//右上
 
 		//左
-		{{  -5.0f, -5.0f,  5.0f},{0.0f,1.0f}},
-		{{  -5.0f,  5.0f,  5.0f},{0.0f,0.0f}},
-		{{  -5.0f, -5.0f, -5.0f},{1.0f,1.0f}},
-		{{  -5.0f,  5.0f, -5.0f},{1.0f,0.0f}},
+		{{  -5.0f, -5.0f, -5.0f},{0.0f,1.0f}},  //左下
+		{{  -5.0f, -5.0f,  5.0f},{0.0f,0.0f}},	//左上
+		{{  -5.0f,  5.0f, -5.0f},{1.0f,1.0f}},	//右下
+		{{  -5.0f,  5.0f,  5.0f},{1.0f,0.0f}},	//右上
 
 		//右
-		{{   5.0f, -5.0f,  5.0f},{0.0f,1.0f}},
-		{{   5.0f,  5.0f,  5.0f},{0.0f,0.0f}},
-		{{   5.0f, -5.0f, -5.0f},{1.0f,1.0f}},
-		{{   5.0f,  5.0f, -5.0f},{1.0f,0.0f}},
+		{{   5.0f, -5.0f, -5.0f},{0.0f,1.0f}},  //左下
+		{{   5.0f, -5.0f,  5.0f},{0.0f,0.0f}},	//左上
+		{{   5.0f,  5.0f, -5.0f},{1.0f,1.0f}},	//右下
+		{{   5.0f,  5.0f,  5.0f},{1.0f,0.0f}},	//右上
 
 		//下
-		{{  -5.0f, -5.0f,  5.0f},{0.0f,1.0f}},
-		{{  -5.0f, -5.0f, -5.0f},{0.0f,1.0f}},
-		{{   5.0f, -5.0f,  5.0f},{1.0f,1.0f}},
-		{{   5.0f, -5.0f, -5.0f},{1.0f,1.0f}},
+		{{  -5.0f, -5.0f,  5.0f},{0.0f,1.0f}},  //左下
+		{{  -5.0f, -5.0f, -5.0f},{0.0f,1.0f}},	//左上
+		{{   5.0f, -5.0f,  5.0f},{1.0f,1.0f}},	//右下
+		{{   5.0f, -5.0f, -5.0f},{1.0f,1.0f}},	//右上
 
 		//上
-		{{  -5.0f,  5.0f,  5.0f},{0.0f,1.0f}},
-		{{  -5.0f,  5.0f, -5.0f},{0.0f,1.0f}},
-		{{   5.0f,  5.0f,  5.0f},{1.0f,1.0f}},
-		{{   5.0f,  5.0f, -5.0f},{1.0f,1.0f}},
+		{{  -5.0f,  5.0f,  5.0f},{0.0f,1.0f}},  //左下
+		{{  -5.0f,  5.0f, -5.0f},{0.0f,1.0f}},	//左上
+		{{   5.0f,  5.0f,  5.0f},{1.0f,1.0f}},	//右下
+		{{   5.0f,  5.0f, -5.0f},{1.0f,1.0f}},	//右上
 	};
 
 	//インデックスデータ
@@ -448,6 +448,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	// パイプラインにルートシグネチャをセット
 	pipelineDesc.pRootSignature = rootSignature;
 
+	//デプスステンシルステートの設定
+	pipelineDesc.DepthStencilState.DepthEnable = true;   //深度テストを行う
+	pipelineDesc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;   //書き込み許可
+	pipelineDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS;   //小さければ合格
+	pipelineDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;   //深度値フォーマット
+
 	// パイプランステートの生成
 	ID3D12PipelineState* pipelineState = nullptr;
 	DXInit.result = DXInit.device->CreateGraphicsPipelineState(&pipelineDesc, IID_PPV_ARGS(&pipelineState));
@@ -706,7 +712,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	//デスクリプタヒープの設定
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;      //レンダーターゲットビュー
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;  //シェーダから見えるように
 	srvHeapDesc.NumDescriptors = kMaxSRVCount;
 
@@ -732,6 +738,56 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	//ハンドルの指す位置にシェーダーリソースビュー作成
 	DXInit.device->CreateShaderResourceView(texBuff, &srvDesc, srvHandle);
+
+	//深度バッファのリソース設定
+
+	//リソース設定
+	D3D12_RESOURCE_DESC depthResourceDesc{};
+	depthResourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	depthResourceDesc.Width = WindowsApp::window_width;   //レンダーターゲットに合わせる
+	depthResourceDesc.Height = WindowsApp::window_height; //レンダーターゲットに合わせる
+	depthResourceDesc.DepthOrArraySize = 1;
+	depthResourceDesc.Format = DXGI_FORMAT_D32_FLOAT;  //深度値フォーマット
+	depthResourceDesc.SampleDesc.Count = 1;
+	depthResourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;  //デプスステンシル
+
+	//深度バッファのその他の設定
+
+	//深度値用ヒーププロパティ
+	D3D12_HEAP_PROPERTIES depthHeapProp{};
+	depthHeapProp.Type = D3D12_HEAP_TYPE_DEFAULT;
+
+	//深度値のクリア設定
+	D3D12_CLEAR_VALUE depthClearValue{};
+	depthClearValue.DepthStencil.Depth = 1.0f;  //深度値1.0f(最大値)でクリア
+	depthClearValue.Format = DXGI_FORMAT_D32_FLOAT;  //深度値フォーマット
+
+	//深度バッファ生成
+
+	//リソース生成
+	ID3D12Resource* depthBuff = nullptr;
+	DXInit.result = DXInit.device->CreateCommittedResource
+	(
+		&depthHeapProp,
+		D3D12_HEAP_FLAG_NONE,
+		&depthResourceDesc,
+		D3D12_RESOURCE_STATE_DEPTH_WRITE,  //深度値書き込みに使用
+		&depthClearValue,
+		IID_PPV_ARGS(&depthBuff)
+	);
+
+	//深度ビュー用デスクリプタヒープ生成
+	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc{};
+	dsvHeapDesc.NumDescriptors = 1;   //深度ビューは1つ
+	dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;   //デプスステンシルビュー
+	ID3D12DescriptorHeap* dsvHeap = nullptr;
+	DXInit.result = DXInit.device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&dsvHeap));
+
+	//深度ビュー生成
+	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
+	dsvDesc.Format = DXGI_FORMAT_D32_FLOAT;   //深度値フォーマット
+	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+	DXInit.device->CreateDepthStencilView(depthBuff, &dsvDesc, dsvHeap->GetCPUDescriptorHandleForHeapStart());
 
 
 	// --- 描画初期化処理　ここまで --- //
@@ -846,11 +902,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		//レンダーターゲットビューのハンドルを取得
 		D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = DXInit.rtvHeap->GetCPUDescriptorHandleForHeapStart();
 		rtvHandle.ptr += bbIndex * DXInit.device->GetDescriptorHandleIncrementSize(DXInit.rtvHeapDesc.Type);
-		DXInit.commandList->OMSetRenderTargets(1, &rtvHandle, false, nullptr);
+		//DXInit.commandList->OMSetRenderTargets(1, &rtvHandle, false, nullptr);
+
+		//深度ステンシルビュー用デスクリプターヒープのハンドルを取得
+		D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvHeap->GetCPUDescriptorHandleForHeapStart();
+		DXInit.commandList->OMSetRenderTargets(1, &rtvHandle, false, &dsvHandle);
 
 		//3.画面クリア
 		FLOAT clearColor[] = { 0.1f,0.25f,0.5f,0.0f }; //青っぽい色{ R, G, B, A }
 		DXInit.commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+		DXInit.commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
 		//スペースキーが押されていたら
 		if (key[DIK_SPACE])

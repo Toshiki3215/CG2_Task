@@ -501,6 +501,73 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		XMMATRIX mat;
 	};
 
+	//3Dオブジェクト型
+
+	//struct Object3d
+	//{
+	//	//定数バッファ(行列)
+	//	ID3D12Resource* constBuffTransform;
+
+	//	//定数バッファマップ(行列)
+	//	ConstBufferDataTransform* constMapTransform;
+
+	//	//アフィン変換情報
+	//	XMFLOAT3 scale = { 1,1,1 };
+	//	XMFLOAT3 rotation = { 0,0,0 };
+	//	XMFLOAT3 position = { 0,0,0 };
+
+	//	//ワールド変換行列
+	//	XMMATRIX matWorld;
+
+	//	//親オブジェクトへのポインタ
+	//	Object3d* parent = nullptr;
+
+	//};
+
+	////3Dオブジェクトの数
+	//const size_t kObjectCount = 50;
+
+	////3Dオブジェクトの配列
+	//Object3d object3ds[kObjectCount];
+
+	/*//3Dオブジェクト初期化
+	void InitializeObject3d(Object3d* object, ID3D12Device* device)
+	{
+		HRESULT result;
+
+		//定数バッファのヒープ設定
+		D3D12_HEAP_PROPERTIES heapProp{};
+		heapProp.Type = D3D12_HEAP_TYPE_UPLOAD;
+
+		//定数バッファのリソース設定
+		D3D12_RESOURCE_DESC resdesc{};
+		resdesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+		resdesc.Width = (sizeof(ConstBufferDataTransform) + 0xff) & ~0xff;
+		resdesc.Height = 1;
+		resdesc.DepthOrArraySize = 1;
+		resdesc.MipLevels = 1;
+		resdesc.SampleDesc.Count = 1;
+		resdesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+
+		//定数バッファの生成
+		result = device->CreateCommittedResource
+		(
+			&heapProp,
+			D3D12_HEAP_FLAG_NONE,
+			&resdesc,
+			D3D12_RESOURCE_STATE_GENERIC_READ,
+			nullptr,
+			IID_PPV_ARGS(&object->constBuffTransform)
+		);
+
+		assert(SUCCEEDED(result));
+
+		//定数バッファのマッピング
+		result = object->constBuffTransform->Map(0, nullptr, (void**)&object->constMapTransform);
+
+		assert(SUCCEEDED(result));
+	}*/
+
 	//0番の行列用定数バッファ
 
 	ID3D12Resource* constBuffTransform0 = nullptr;
@@ -537,6 +604,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			nullptr,
 			IID_PPV_ARGS(&constBuffTransform0)
 		);
+		assert(SUCCEEDED(DXInit.result));
 		
 		DXInit.result = constBuffTransform0->Map(0, nullptr, (void**)&constMapTransform0);
 		assert(SUCCEEDED(DXInit.result));
@@ -578,6 +646,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			nullptr,
 			IID_PPV_ARGS(&constBuffTransform1)
 		);
+		assert(SUCCEEDED(DXInit.result));
 
 		DXInit.result = constBuffTransform1->Map(0, nullptr, (void**)&constMapTransform1);
 		assert(SUCCEEDED(DXInit.result));
@@ -1072,7 +1141,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		DXInit.commandList->SetGraphicsRootDescriptorTable(1, srvGpuHandle);
 
 		//0番定数バッファビュー(CBV)の設定コマンド
-		DXInit.commandList->SetGraphicsRootConstantBufferView(2, constBuffTransform0->GetGPUVirtualAddress());
+		//DXInit.commandList->SetGraphicsRootConstantBufferView(2, constBuffTransform0->GetGPUVirtualAddress());
 
 		//インデックスバッファビューの設定コマンド
 		DXInit.commandList->IASetIndexBuffer(&ibView);

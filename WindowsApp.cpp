@@ -53,3 +53,38 @@ void WindowsApp::createWin()
 	//ウィンドウを表示状態にする
 	ShowWindow(hwnd, SW_SHOW);
 }
+
+void WindowsApp::createSubWin()
+{
+	//ウィンドウクラスの設定
+	w.cbSize = sizeof(WNDCLASSEX);
+	w.lpfnWndProc = (WNDPROC)WindowsApp::WindowProc; //ウィンドウプロシージャを設定
+	w.lpszClassName = L"DirectXGame";	//ウィンドウクラス名
+	w.hInstance = GetModuleHandle(nullptr);//ウィンドウハンドル
+	w.hCursor = LoadCursor(NULL, IDC_ARROW);//カーソル指定
+
+	//ウィンドウクラスをosに登録する
+	RegisterClassEx(&w);
+
+	//ウィンドウサイズ{x座標,y座標,横幅,縦幅}
+	RECT wrc = { 0,0,subWindow_width,subWindow_height };
+
+	//自動でサイズを補正する
+	AdjustWindowRect(&wrc, WS_OVERLAPPEDWINDOW, false);
+
+	//ウィンドウオブジェクトの生成
+	hwnd = CreateWindow(w.lpszClassName,//クラス名
+		L"DirectXGame",//タイトルバーの文字
+		WS_OVERLAPPEDWINDOW,//標準的なウィンドウスタイル
+		CW_USEDEFAULT,//表示x座標(osに任せる)
+		CW_USEDEFAULT,//表示y座標(osに任せる)
+		wrc.right - wrc.left,//ウィンドウ横幅
+		wrc.bottom - wrc.top,//ウィンドウ縦幅
+		nullptr,//親ウィンドウハンドル
+		nullptr,//メニューハンドル
+		w.hInstance,//呼び出しアプリケーションハンドル
+		nullptr);//オプション
+
+	//ウィンドウを表示状態にする
+	ShowWindow(hwnd, SW_SHOW);
+}

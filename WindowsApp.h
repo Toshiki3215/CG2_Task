@@ -8,6 +8,10 @@ public:
 	static const int window_width = 1280;	//横幅
 	static const int window_height = 720;	//縦幅
 
+	//サブウィンドウサイズ
+	static const int subWindow_width = 640;	 //横幅
+	static const int subWindow_height = 720; //縦幅
+
 	//ウィンドウクラスの設定
 	WNDCLASSEX w{};
 
@@ -19,5 +23,7 @@ public:
 	HWND hwnd;
 
 	void createWin();
+
+	void createSubWin();
 
 };

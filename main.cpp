@@ -22,6 +22,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	winApp.createWin();
 
+	//winApp.createSubWin();
+
+	WindowsApp subWinApp;
+
+	subWinApp.createSubWin();
+
 	// --- DirectX初期化処理　ここから --- //
 
 #ifdef _DEBUG
@@ -38,23 +44,39 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	DXInit.createDX(winApp.hwnd);
 
+	DirectXInitialize DXInit2;
+
+	DXInit2.createDX(subWinApp.hwnd);
+
 	//DirectInputの初期化
 	IDirectInput8* directInput = nullptr;
 	DXInit.result = DirectInput8Create(winApp.w.hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&directInput, nullptr);
 	assert(SUCCEEDED(DXInit.result));
+
+	DXInit2.result = DirectInput8Create(subWinApp.w.hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&directInput, nullptr);
+	assert(SUCCEEDED(DXInit2.result));
 
 	//キーボードデバイスの生成
 	IDirectInputDevice8* keyboard = nullptr;
 	DXInit.result = directInput->CreateDevice(GUID_SysKeyboard, &keyboard, NULL);
 	assert(SUCCEEDED(DXInit.result));
 
+	DXInit2.result = directInput->CreateDevice(GUID_SysKeyboard, &keyboard, NULL);
+	assert(SUCCEEDED(DXInit2.result));
+
 	//入力データ形式のセット
 	DXInit.result = keyboard->SetDataFormat(&c_dfDIKeyboard); //標準形式
 	assert(SUCCEEDED(DXInit.result));
 
+	DXInit2.result = keyboard->SetDataFormat(&c_dfDIKeyboard); //標準形式
+	assert(SUCCEEDED(DXInit2.result));
+
 	//排他制御レベルのセット
 	DXInit.result = keyboard->SetCooperativeLevel(winApp.hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
 	assert(SUCCEEDED(DXInit.result));
+
+	DXInit2.result = keyboard->SetCooperativeLevel(subWinApp.hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
+	assert(SUCCEEDED(DXInit2.result));
 
 	// --- DirectX初期化処理　ここまで --- //
 
@@ -1110,13 +1132,22 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		DXInit.result = DXInit.commandList->Close();
 		assert(SUCCEEDED(DXInit.result));
 
+		DXInit2.result = DXInit2.commandList->Close();
+		assert(SUCCEEDED(DXInit2.result));
+
 		// コマンドリストの実行
 		ID3D12CommandList* commandLists[] = { DXInit.commandList };
 		DXInit.commandQueue->ExecuteCommandLists(1, commandLists);
 
+		ID3D12CommandList* commandLists2[] = { DXInit2.commandList };
+		DXInit2.commandQueue->ExecuteCommandLists(1, commandLists);
+
 		// 画面に表示するバッファをフリップ(裏表の入替え)
 		DXInit.result = DXInit.swapChain->Present(1, 0);
 		assert(SUCCEEDED(DXInit.result));
+
+		DXInit2.result = DXInit2.swapChain->Present(1, 0);
+		assert(SUCCEEDED(DXInit2.result));
 
 		//コマンドの実行完了を待つ
 		DXInit.commandQueue->Signal(DXInit.fence, ++DXInit.fenceVal);
@@ -1128,13 +1159,28 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			CloseHandle(event);
 		}
 
+		DXInit2.commandQueue->Signal(DXInit2.fence, ++DXInit2.fenceVal);
+		if (DXInit2.fence->GetCompletedValue() != DXInit2.fenceVal)
+		{
+			HANDLE event = CreateEvent(nullptr, false, false, nullptr);
+			DXInit2.fence->SetEventOnCompletion(DXInit2.fenceVal, event);
+			WaitForSingleObject(event, INFINITE);
+			CloseHandle(event);
+		}
+
 		//キューをクリア
 		DXInit.result = DXInit.commandAllocator->Reset();
 		assert(SUCCEEDED(DXInit.result));
 
+		DXInit2.result = DXInit2.commandAllocator->Reset();
+		assert(SUCCEEDED(DXInit2.result));
+
 		//再びコマンドリストにためる準備
 		DXInit.result = DXInit.commandList->Reset(DXInit.commandAllocator, nullptr);
 		assert(SUCCEEDED(DXInit.result));
+
+		DXInit2.result = DXInit2.commandList->Reset(DXInit2.commandAllocator, nullptr);
+		assert(SUCCEEDED(DXInit2.result));
 
 		// --- DirectX毎フレーム処理　ここまで --- //
 
@@ -1142,6 +1188,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	//ウィンドウクラスを登録解除
 	UnregisterClass(winApp.w.lpszClassName, winApp.w.hInstance);
+
+	UnregisterClass(subWinApp.w.lpszClassName, subWinApp.w.hInstance);
 
 	return 0;
 }

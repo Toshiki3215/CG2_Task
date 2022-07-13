@@ -22,6 +22,8 @@ public:
 
 	HWND hwnd;
 
+	HWND hwndSub;
+
 	void createWin();
 
 	void createSubWin();

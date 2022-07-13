@@ -22,20 +22,21 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	winApp.createWin();
 
-	//winApp.createSubWin();
+	winApp.createSubWin();
 
-	WindowsApp subWinApp;
+	/*WindowsApp subWinApp;
 
-	subWinApp.createSubWin();
+	subWinApp.createSubWin();*/
 
 	// --- DirectX初期化処理　ここから --- //
 
 #ifdef _DEBUG
 //デバッグレイヤーをオンに
-	ID3D12Debug* debugController;
+	ID3D12Debug1* debugController;
 	if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
 	{
 		debugController->EnableDebugLayer();
+		debugController->SetEnableGPUBasedValidation(TRUE);
 	}
 #endif
 
@@ -44,39 +45,42 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	DXInit.createDX(winApp.hwnd);
 
+	//DXInit.createDX(winApp.hwndSub);
+
+
 	DirectXInitialize DXInit2;
 
-	DXInit2.createDX(subWinApp.hwnd);
+	DXInit2.createDX(winApp.hwndSub);
 
 	//DirectInputの初期化
 	IDirectInput8* directInput = nullptr;
 	DXInit.result = DirectInput8Create(winApp.w.hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&directInput, nullptr);
 	assert(SUCCEEDED(DXInit.result));
 
-	DXInit2.result = DirectInput8Create(subWinApp.w.hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&directInput, nullptr);
-	assert(SUCCEEDED(DXInit2.result));
+	/*DXInit2.result = DirectInput8Create(subWinApp.w.hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&directInput, nullptr);
+	assert(SUCCEEDED(DXInit2.result));*/
 
 	//キーボードデバイスの生成
 	IDirectInputDevice8* keyboard = nullptr;
 	DXInit.result = directInput->CreateDevice(GUID_SysKeyboard, &keyboard, NULL);
 	assert(SUCCEEDED(DXInit.result));
 
-	DXInit2.result = directInput->CreateDevice(GUID_SysKeyboard, &keyboard, NULL);
-	assert(SUCCEEDED(DXInit2.result));
+	/*DXInit2.result = directInput->CreateDevice(GUID_SysKeyboard, &keyboard, NULL);
+	assert(SUCCEEDED(DXInit2.result));*/
 
 	//入力データ形式のセット
 	DXInit.result = keyboard->SetDataFormat(&c_dfDIKeyboard); //標準形式
 	assert(SUCCEEDED(DXInit.result));
 
-	DXInit2.result = keyboard->SetDataFormat(&c_dfDIKeyboard); //標準形式
-	assert(SUCCEEDED(DXInit2.result));
+	//DXInit2.result = keyboard->SetDataFormat(&c_dfDIKeyboard); //標準形式
+	//assert(SUCCEEDED(DXInit2.result));
 
 	//排他制御レベルのセット
 	DXInit.result = keyboard->SetCooperativeLevel(winApp.hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
 	assert(SUCCEEDED(DXInit.result));
 
-	DXInit2.result = keyboard->SetCooperativeLevel(subWinApp.hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
-	assert(SUCCEEDED(DXInit2.result));
+	/*DXInit2.result = keyboard->SetCooperativeLevel(subWinApp.hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
+	assert(SUCCEEDED(DXInit2.result));*/
 
 	// --- DirectX初期化処理　ここまで --- //
 
@@ -920,6 +924,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		// バックバッファの番号を取得(2つなので0番か1番)
 		UINT bbIndex = DXInit.swapChain->GetCurrentBackBufferIndex();
 
+		UINT bbIndex2 = DXInit2.swapChain->GetCurrentBackBufferIndex();
+
 		//回転
 		if (key[DIK_D] || key[DIK_A])
 		{
@@ -1009,11 +1015,21 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		barrierDesc.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET; // 描画状態へ
 		DXInit.commandList->ResourceBarrier(1, &barrierDesc);
 
+		D3D12_RESOURCE_BARRIER barrierDesc2{};
+		barrierDesc2.Transition.pResource = DXInit2.backBuffers[bbIndex2]; // バックバッファを指定
+		barrierDesc2.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT; // 表示状態から
+		barrierDesc2.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET; // 描画状態へ
+		DXInit2.commandList->ResourceBarrier(1, &barrierDesc2);
+
 		//2.描画先の変更
 		//レンダーターゲットビューのハンドルを取得
 		D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = DXInit.rtvHeap->GetCPUDescriptorHandleForHeapStart();
 		rtvHandle.ptr += bbIndex * DXInit.device->GetDescriptorHandleIncrementSize(DXInit.rtvHeapDesc.Type);
 		//DXInit.commandList->OMSetRenderTargets(1, &rtvHandle, false, nullptr);
+
+		D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle2 = DXInit2.rtvHeap->GetCPUDescriptorHandleForHeapStart();
+		rtvHandle2.ptr += bbIndex2 * DXInit2.device->GetDescriptorHandleIncrementSize(DXInit2.rtvHeapDesc.Type);
+		DXInit2.commandList->OMSetRenderTargets(1, &rtvHandle2, false, nullptr);
 
 		//深度ステンシルビュー用デスクリプターヒープのハンドルを取得
 		D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvHeap->GetCPUDescriptorHandleForHeapStart();
@@ -1023,6 +1039,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		FLOAT clearColor[] = { 0.1f,0.25f,0.5f,0.0f }; //青っぽい色{ R, G, B, A }
 		DXInit.commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 		DXInit.commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+
+		DXInit2.commandList->ClearRenderTargetView(rtvHandle2, clearColor, 0, nullptr);
 
 		//スペースキーが押されていたら
 		if (key[DIK_SPACE])
@@ -1128,6 +1146,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		barrierDesc.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT; // 表示状態へ
 		DXInit.commandList->ResourceBarrier(1, &barrierDesc);
 
+		barrierDesc2.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET; // 描画状態から
+		barrierDesc2.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT; // 表示状態へ
+		DXInit2.commandList->ResourceBarrier(1, &barrierDesc2);
+
 		// 命令のクローズ
 		DXInit.result = DXInit.commandList->Close();
 		assert(SUCCEEDED(DXInit.result));
@@ -1140,7 +1162,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		DXInit.commandQueue->ExecuteCommandLists(1, commandLists);
 
 		ID3D12CommandList* commandLists2[] = { DXInit2.commandList };
-		DXInit2.commandQueue->ExecuteCommandLists(1, commandLists);
+		DXInit2.commandQueue->ExecuteCommandLists(1, commandLists2);
 
 		// 画面に表示するバッファをフリップ(裏表の入替え)
 		DXInit.result = DXInit.swapChain->Present(1, 0);
@@ -1189,7 +1211,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//ウィンドウクラスを登録解除
 	UnregisterClass(winApp.w.lpszClassName, winApp.w.hInstance);
 
-	UnregisterClass(subWinApp.w.lpszClassName, subWinApp.w.hInstance);
+	//UnregisterClass(subWinApp.w.lpszClassName, subWinApp.w.hInstance);
 
 	return 0;
 }

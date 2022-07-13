@@ -73,7 +73,7 @@ void WindowsApp::createSubWin()
 	AdjustWindowRect(&wrc, WS_OVERLAPPEDWINDOW, false);
 
 	//ウィンドウオブジェクトの生成
-	hwnd = CreateWindow(w.lpszClassName,//クラス名
+	hwndSub = CreateWindow(w.lpszClassName,//クラス名
 		L"DirectXGame",//タイトルバーの文字
 		WS_OVERLAPPEDWINDOW,//標準的なウィンドウスタイル
 		CW_USEDEFAULT,//表示x座標(osに任せる)
@@ -86,5 +86,5 @@ void WindowsApp::createSubWin()
 		nullptr);//オプション
 
 	//ウィンドウを表示状態にする
-	ShowWindow(hwnd, SW_SHOW);
+	ShowWindow(hwndSub, SW_SHOW);
 }

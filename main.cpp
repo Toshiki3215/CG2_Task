@@ -14,138 +14,6 @@ using namespace DirectX;
 #pragma comment(lib,"dinput8.lib")
 #pragma comment(lib,"dxguid.lib")
 
-#include<wrl.h>
-
-using namespace Microsoft::WRL;
-
-//定数バッファ用データ構造体(マテリアル)
-struct ConstBufferDataMaterial
-{
-	//色(RGBA)
-	XMFLOAT4 color;
-};
-
-//定数バッファ用データ構造体(3D変換行列)
-struct ConstBufferDataTransform
-{
-	//3D変換行列
-	XMMATRIX mat;
-};
-
-//3Dオブジェクト型
-struct Object3d
-{
-	//定数バッファ(行列)
-	ID3D12Resource* constBuffTransform;
-
-	//定数バッファマップ(行列)
-	ConstBufferDataTransform* constMapTransform;
-
-	//アフィン変換情報
-	XMFLOAT3 scale = { 1,1,1 };
-	XMFLOAT3 rotation = { 0,0,0 };
-	XMFLOAT3 position = { 0,0,0 };
-
-	//ワールド変換行列
-	XMMATRIX matWorld;
-
-	//親オブジェクトへのポインタ
-	Object3d* parent = nullptr;
-
-};
-
-//3Dオブジェクト初期化
-
-void InitializeObject3d(Object3d* object, ID3D12Device* device)
-{
-	HRESULT result;
-
-	//定数バッファのヒープ設定
-	D3D12_HEAP_PROPERTIES heapProp{};
-	heapProp.Type = D3D12_HEAP_TYPE_UPLOAD;
-
-	//定数バッファのリソース設定
-	D3D12_RESOURCE_DESC resdesc{};
-	resdesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	resdesc.Width = (sizeof(ConstBufferDataTransform) + 0xff) & ~0xff;
-	resdesc.Height = 1;
-	resdesc.DepthOrArraySize = 1;
-	resdesc.MipLevels = 1;
-	resdesc.SampleDesc.Count = 1;
-	resdesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-
-	//定数バッファの生成
-	result = device->CreateCommittedResource
-	(
-		&heapProp,
-		D3D12_HEAP_FLAG_NONE,
-		&resdesc,
-		D3D12_RESOURCE_STATE_GENERIC_READ,
-		nullptr,
-		IID_PPV_ARGS(&object->constBuffTransform)
-	);
-
-	assert(SUCCEEDED(result));
-
-	//定数バッファのマッピング
-	result = object->constBuffTransform->Map(0, nullptr, (void**)&object->constMapTransform);
-
-	assert(SUCCEEDED(result));
-}
-
-void UpdateObject3d(Object3d* object, XMMATRIX& matView, XMMATRIX& matProjection)
-{
-	XMMATRIX matScale, matRot, matTrans;
-
-	//スケール、回転、平行移動行列
-	matScale = XMMatrixScaling(object->scale.x, object->scale.y, object->scale.z);
-	matRot = XMMatrixIdentity();
-	matRot *= XMMatrixRotationZ(object->rotation.z);
-	matRot *= XMMatrixRotationX(object->rotation.x);
-	matRot *= XMMatrixRotationY(object->rotation.y);
-	matTrans = XMMatrixTranslation(object->position.x, object->position.y, object->position.z);
-
-	//ワールド行列の合成
-	//変形をリセット
-	object->matWorld = XMMatrixIdentity();
-
-	//ワールド行列にスケーリングを反映
-	object->matWorld *= matScale;
-
-	//ワールド行列に回転を反映
-	object->matWorld *= matRot;
-
-	//ワールド行列に平行移動を反映
-	object->matWorld *= matTrans;
-
-	//親オブジェクトがあれば
-	if (object->parent != nullptr)
-	{
-		//親オブジェクトのワールド行列を掛ける
-		object->matWorld *= object->parent->matWorld;
-	}
-
-	//定数バッファへデータ転送
-	object->constMapTransform->mat = object->matWorld * matView * matProjection;
-
-}
-
-void DrawObject3d(Object3d* object, ID3D12GraphicsCommandList* commandList, D3D12_VERTEX_BUFFER_VIEW& vbView, D3D12_INDEX_BUFFER_VIEW& ibView, UINT numIndeces)
-{
-	//頂点バッファの設定
-	commandList->IASetVertexBuffers(0, 1, &vbView);
-
-	//インデックスバッファの設定
-	commandList->IASetIndexBuffer(&ibView);
-
-	//定数バッファビュー(CBV)の設定コマンド
-	commandList->SetGraphicsRootConstantBufferView(2, object->constBuffTransform->GetGPUVirtualAddress());
-
-	//描画コマンド
-	commandList->DrawIndexedInstanced(numIndeces, 1, 0, 0, 0);
-
-}
-
 //Widowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
@@ -153,6 +21,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	WindowsApp winApp;
 
 	winApp.createWin();
+
+	winApp.createSubWin();
+
+	/*WindowsApp subWinApp;
+	subWinApp.createSubWin();*/
 
 	// --- DirectX初期化処理　ここから --- //
 
@@ -171,23 +44,42 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	DXInit.createDX(winApp.hwnd);
 
+	//DXInit.createDX(winApp.hwndSub);
+
+
+	DirectXInitialize DXInit2;
+
+	DXInit2.createDX(winApp.hwndSub);
+
 	//DirectInputの初期化
 	IDirectInput8* directInput = nullptr;
 	DXInit.result = DirectInput8Create(winApp.w.hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&directInput, nullptr);
 	assert(SUCCEEDED(DXInit.result));
+
+	/*DXInit2.result = DirectInput8Create(subWinApp.w.hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&directInput, nullptr);
+	assert(SUCCEEDED(DXInit2.result));*/
 
 	//キーボードデバイスの生成
 	IDirectInputDevice8* keyboard = nullptr;
 	DXInit.result = directInput->CreateDevice(GUID_SysKeyboard, &keyboard, NULL);
 	assert(SUCCEEDED(DXInit.result));
 
+	/*DXInit2.result = directInput->CreateDevice(GUID_SysKeyboard, &keyboard, NULL);
+	assert(SUCCEEDED(DXInit2.result));*/
+
 	//入力データ形式のセット
 	DXInit.result = keyboard->SetDataFormat(&c_dfDIKeyboard); //標準形式
 	assert(SUCCEEDED(DXInit.result));
 
+	//DXInit2.result = keyboard->SetDataFormat(&c_dfDIKeyboard); //標準形式
+	//assert(SUCCEEDED(DXInit2.result));
+
 	//排他制御レベルのセット
 	DXInit.result = keyboard->SetCooperativeLevel(winApp.hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
 	assert(SUCCEEDED(DXInit.result));
+
+	/*DXInit2.result = keyboard->SetCooperativeLevel(subWinApp.hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
+	assert(SUCCEEDED(DXInit2.result));*/
 
 	// --- DirectX初期化処理　ここまで --- //
 
@@ -210,37 +102,37 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		{{  -5.0f, -5.0f, -5.0f},{},{0.0f,1.0f}},  //左下
 		{{  -5.0f,  5.0f, -5.0f},{},{0.0f,0.0f}},  //左上
 		{{   5.0f, -5.0f, -5.0f},{},{1.0f,1.0f}},  //右下
-		//{{   5.0f,  5.0f, -5.0f},{},{1.0f,0.0f}},  //右上
-								
-		////後					
-		//{{  -5.0f, -5.0f,  5.0f},{},{0.0f,1.0f}},  //左下
-		//{{  -5.0f,  5.0f,  5.0f},{},{0.0f,0.0f}},  //左上
-		//{{   5.0f, -5.0f,  5.0f},{},{1.0f,1.0f}},  //右下
-		//{{   5.0f,  5.0f,  5.0f},{},{1.0f,0.0f}},  //右上
-		//						 
-		////左					
-		//{{  -5.0f, -5.0f, -5.0f},{},{0.0f,1.0f}},  //左下
-		//{{  -5.0f, -5.0f,  5.0f},{},{0.0f,0.0f}},  //左上
-		//{{  -5.0f,  5.0f, -5.0f},{},{1.0f,1.0f}},  //右下
-		//{{  -5.0f,  5.0f,  5.0f},{},{1.0f,0.0f}},  //右上
-		//						
-		////右					
-		//{{   5.0f, -5.0f, -5.0f},{},{0.0f,1.0f}},  //左下
-		//{{   5.0f, -5.0f,  5.0f},{},{0.0f,0.0f}},  //左上
-		//{{   5.0f,  5.0f, -5.0f},{},{1.0f,1.0f}},  //右下
-		//{{   5.0f,  5.0f,  5.0f},{},{1.0f,0.0f}},  //右上
-		//						
-		////下					
-		//{{  -5.0f, -5.0f, -5.0f},{},{0.0f,1.0f}},  //左下
-		//{{  -5.0f, -5.0f,  5.0f},{},{0.0f,1.0f}},  //左上
-		//{{   5.0f, -5.0f, -5.0f},{},{1.0f,1.0f}},  //右下
-		//{{   5.0f, -5.0f,  5.0f},{},{1.0f,1.0f}},  //右上
-		//						
-		////上					
-		//{{  -5.0f,  5.0f, -5.0f},{},{0.0f,1.0f}},  //左下
-		//{{  -5.0f,  5.0f,  5.0f},{},{0.0f,1.0f}},  //左上
-		//{{   5.0f,  5.0f, -5.0f},{},{1.0f,1.0f}},  //右下
-		//{{   5.0f,  5.0f,  5.0f},{},{1.0f,1.0f}},  //右上
+		{{   5.0f,  5.0f, -5.0f},{},{1.0f,0.0f}},  //右上
+
+		//後					
+		{{  -5.0f, -5.0f,  5.0f},{},{0.0f,1.0f}},  //左下
+		{{  -5.0f,  5.0f,  5.0f},{},{0.0f,0.0f}},  //左上
+		{{   5.0f, -5.0f,  5.0f},{},{1.0f,1.0f}},  //右下
+		{{   5.0f,  5.0f,  5.0f},{},{1.0f,0.0f}},  //右上
+
+		//左					
+		{{  -5.0f, -5.0f, -5.0f},{},{0.0f,1.0f}},  //左下
+		{{  -5.0f, -5.0f,  5.0f},{},{0.0f,0.0f}},  //左上
+		{{  -5.0f,  5.0f, -5.0f},{},{1.0f,1.0f}},  //右下
+		{{  -5.0f,  5.0f,  5.0f},{},{1.0f,0.0f}},  //右上
+
+		//右					
+		{{   5.0f, -5.0f, -5.0f},{},{0.0f,1.0f}},  //左下
+		{{   5.0f, -5.0f,  5.0f},{},{0.0f,0.0f}},  //左上
+		{{   5.0f,  5.0f, -5.0f},{},{1.0f,1.0f}},  //右下
+		{{   5.0f,  5.0f,  5.0f},{},{1.0f,0.0f}},  //右上
+
+		//下					
+		{{  -5.0f, -5.0f, -5.0f},{},{0.0f,1.0f}},  //左下
+		{{  -5.0f, -5.0f,  5.0f},{},{0.0f,1.0f}},  //左上
+		{{   5.0f, -5.0f, -5.0f},{},{1.0f,1.0f}},  //右下
+		{{   5.0f, -5.0f,  5.0f},{},{1.0f,1.0f}},  //右上
+
+		//上					
+		{{  -5.0f,  5.0f, -5.0f},{},{0.0f,1.0f}},  //左下
+		{{  -5.0f,  5.0f,  5.0f},{},{0.0f,1.0f}},  //左上
+		{{   5.0f,  5.0f, -5.0f},{},{1.0f,1.0f}},  //右下
+		{{   5.0f,  5.0f,  5.0f},{},{1.0f,1.0f}},  //右上
 	};
 
 	//インデックスデータ
@@ -248,31 +140,31 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	{
 		//前
 		0,1,2, //三角形1つ目
-		//2,1,3, //三角形2つ目
+		2,1,3, //三角形2つ目
 
-		////後
-		//5,4,6, //三角形3つ目
-		//5,6,7, //三角形4つ目
+		//後
+		5,4,6, //三角形3つ目
+		5,6,7, //三角形4つ目
 
-		////左
-		//8,9,10,
-		//10,9,11,
+		//左
+		8,9,10,
+		10,9,11,
 
-		////右
-		//13,12,14,
-		//13,14,15,
+		//右
+		13,12,14,
+		13,14,15,
 
-		////下
-		//17,16,18,
-		//17,18,19,
+		//下
+		17,16,18,
+		17,18,19,
 
-		////上
-		//20,21,22,
-		//22,21,23,
+		//上
+		20,21,22,
+		22,21,23,
 	};
 
 	//法線の計算
-	for (int i = 0; i < 3 / 3; i++) //36
+	for (int i = 0; i < 36 / 3; i++)
 	{
 		//三角形1つごとに計算していく
 
@@ -514,7 +406,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//  定数バッファ0番
 	//定数バッファビュー
 	rootParams[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-	
+
 	//定数バッファ番号
 	rootParams[0].Descriptor.ShaderRegister = 0;
 
@@ -553,7 +445,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	//テクスチャサンプラーの設定
 	D3D12_STATIC_SAMPLER_DESC samplerDesc{};
-	
+
 	//横繰り返し(タイリング)
 	samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
 
@@ -620,36 +512,100 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	DXInit.result = DXInit.device->CreateGraphicsPipelineState(&pipelineDesc, IID_PPV_ARGS(&pipelineState));
 	assert(SUCCEEDED(DXInit.result));
 
-	//3Dオブジェクトの数
-	const size_t kObjectCount = 1;
-
-	//3Dオブジェクトの配列
-	Object3d object3ds[kObjectCount];
-
-	//配列内の全オブジェクトに対して
-	for (int i = 0; i < _countof(object3ds); i++)
+	//定数バッファ用データ構造体(マテリアル)
+	struct ConstBufferDataMaterial
 	{
-		//初期化
-		InitializeObject3d(&object3ds[i], DXInit.device);
+		//色(RGBA)
+		XMFLOAT4 color;
+	};
 
-		//ここから↓は親子構造のサンプル
-		//先頭以外なら
-		if (i > 0)
-		{
-			//一つ前のオブジェクトを親オブジェクトとする
-			object3ds[i].parent = &object3ds[i - 1];
+	//定数バッファ用データ構造体(3D変換行列)
+	struct ConstBufferDataTransform
+	{
+		//3D変換行列
+		XMMATRIX mat;
+	};
 
-			//親オブジェクトの9割の大きさ
-			object3ds[i].scale = { 0.9f,0.9f,0.9f };
+	//0番の行列用定数バッファ
 
-			//親オブジェクトに対してZ軸まわりに30度回転
-			object3ds[i].rotation = { 0.0f,0.0f,XMConvertToRadians(30.0f) };
+	ID3D12Resource* constBuffTransform0 = nullptr;
+	ConstBufferDataTransform* constMapTransform0 = nullptr;
 
-			//親オブジェクトに対してZ軸方向に-8.0ずらす
-			object3ds[i].position = { 0.0f,0.0f,-8.0f };
+	//0番_定数バッファの生成(設定)
+	{
+		//ヒープ設定
+		D3D12_HEAP_PROPERTIES cbHeapProp{};
 
-		}
+		//GPUへの転送用
+		cbHeapProp.Type = D3D12_HEAP_TYPE_UPLOAD;
 
+		//リソース設定
+		D3D12_RESOURCE_DESC cbResourceDesc{};
+		cbResourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+
+		//256バイトアラインメント
+		cbResourceDesc.Width = (sizeof(ConstBufferDataTransform) + 0xff) & ~0xff;
+		cbResourceDesc.Height = 1;
+		cbResourceDesc.DepthOrArraySize = 1;
+		cbResourceDesc.MipLevels = 1;
+		cbResourceDesc.SampleDesc.Count = 1;
+		cbResourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+
+		DXInit.result = DXInit.device->CreateCommittedResource
+		(
+			//ヒープ設定
+			&cbHeapProp,
+			D3D12_HEAP_FLAG_NONE,
+			//リソース設定
+			&cbResourceDesc,
+			D3D12_RESOURCE_STATE_GENERIC_READ,
+			nullptr,
+			IID_PPV_ARGS(&constBuffTransform0)
+		);
+
+		DXInit.result = constBuffTransform0->Map(0, nullptr, (void**)&constMapTransform0);
+		assert(SUCCEEDED(DXInit.result));
+	}
+
+	//1番の行列用定数バッファ
+
+	ID3D12Resource* constBuffTransform1 = nullptr;
+	ConstBufferDataTransform* constMapTransform1 = nullptr;
+
+	//1番_定数バッファの生成(設定)
+	{
+		//ヒープ設定
+		D3D12_HEAP_PROPERTIES cbHeapProp{};
+
+		//GPUへの転送用
+		cbHeapProp.Type = D3D12_HEAP_TYPE_UPLOAD;
+
+		//リソース設定
+		D3D12_RESOURCE_DESC cbResourceDesc{};
+		cbResourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+
+		//256バイトアラインメント
+		cbResourceDesc.Width = (sizeof(ConstBufferDataTransform) + 0xff) & ~0xff;
+		cbResourceDesc.Height = 1;
+		cbResourceDesc.DepthOrArraySize = 1;
+		cbResourceDesc.MipLevels = 1;
+		cbResourceDesc.SampleDesc.Count = 1;
+		cbResourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+
+		DXInit.result = DXInit.device->CreateCommittedResource
+		(
+			//ヒープ設定
+			&cbHeapProp,
+			D3D12_HEAP_FLAG_NONE,
+			//リソース設定
+			&cbResourceDesc,
+			D3D12_RESOURCE_STATE_GENERIC_READ,
+			nullptr,
+			IID_PPV_ARGS(&constBuffTransform1)
+		);
+
+		DXInit.result = constBuffTransform1->Map(0, nullptr, (void**)&constMapTransform1);
+		assert(SUCCEEDED(DXInit.result));
 	}
 
 	//ヒープ設定
@@ -692,6 +648,38 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	DXInit.result = constBuffMaterial->Map(0, nullptr, (void**)&constMapMaterial);
 	assert(SUCCEEDED(DXInit.result));
 
+	//ワールド変換行列
+	XMMATRIX matWorld;
+
+	//スケーリング行列
+	XMMATRIX matScale;
+
+	//スケーリング倍率
+	XMFLOAT3 scale = { 1.0f,1.0f,1.0f };
+
+	matScale = XMMatrixScaling(scale.x, scale.y, scale.z);
+
+
+	//回転行列
+	XMMATRIX matRot;
+
+	//回転角
+	XMFLOAT3 rotation = { 0.0f,0.0f,0.0f };
+
+	matRot = XMMatrixIdentity();
+
+	//Z軸まわりに0度回転
+	matRot *= XMMatrixRotationZ(XMConvertToRadians(rotation.z));
+
+	//X軸まわりに15度回転
+	matRot *= XMMatrixRotationX(XMConvertToRadians(rotation.x));
+
+	//Y軸まわりに45度回転
+	matRot *= XMMatrixRotationY(XMConvertToRadians(rotation.y));
+
+	//座標
+	XMFLOAT3 position = { 0.0f,0.0f,0.0f };
+
 	//ビュー変換行列
 	XMMATRIX matView;
 
@@ -708,6 +696,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	//カメラの回転角
 	float angle = 0.0f;
+
+	//並行投影行列の計算
+	constMapTransform0->mat = XMMatrixOrthographicOffCenterLH
+	(
+		0.0f, winApp.window_width,
+		winApp.window_height, 0.0f,
+		0.0f, 1.0f
+	);
 
 	//射影変換行列(透視投影)
 	XMMATRIX matProjection = XMMatrixPerspectiveFovLH
@@ -732,7 +728,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//WICテクスチャのロード
 	DXInit.result = LoadFromWICFile
 	(
-		L"Resources/texture2.png",  //「Resources」フォルダの「texture.png」
+		L"Resources/texture3.png",  //「Resources」フォルダの「texture.png」
 		WIC_FLAGS_NONE,
 		&metadata, scratchImg
 	);
@@ -795,7 +791,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		(
 			(UINT)i,
 			//全領域へコピー
-			nullptr, 
+			nullptr,
 			//元データアドレス
 			img->pixels,
 			//1ラインサイズ
@@ -927,6 +923,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		// バックバッファの番号を取得(2つなので0番か1番)
 		UINT bbIndex = DXInit.swapChain->GetCurrentBackBufferIndex();
 
+		UINT bbIndex2 = DXInit2.swapChain->GetCurrentBackBufferIndex();
+
 		//回転
 		if (key[DIK_D] || key[DIK_A])
 		{
@@ -948,20 +946,65 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 		}
 
-		//座標操作
+		//移動
 		if (key[DIK_UP] || key[DIK_DOWN] || key[DIK_RIGHT] || key[DIK_LEFT])
 		{
-			if (key[DIK_UP]) { object3ds[0].position.y += 1.0f; }
-			else if (key[DIK_DOWN]) { object3ds[0].position.y -= 1.0f; }
-
-			if (key[DIK_RIGHT]) { object3ds[0].position.x += 1.0f; }
-			else if (key[DIK_LEFT]) { object3ds[0].position.x -= 1.0f; }
+			//座標を移動する処理(Z座標)
+			if (key[DIK_UP])
+			{
+				position.z += 1.0f;
+			}
+			else if (key[DIK_DOWN])
+			{
+				position.z -= 1.0f;
+			}
+			else if (key[DIK_RIGHT])
+			{
+				position.x += 1.0f;
+			}
+			else if (key[DIK_LEFT])
+			{
+				position.x -= 1.0f;
+			}
 		}
 
-		for (size_t i = 0; i < _countof(object3ds); i++)
-		{
-			UpdateObject3d(&object3ds[i], matView, matProjection);
-		}
+		//平行移動行列
+		XMMATRIX matTrans;
+
+		matTrans = XMMatrixTranslation(position.x, position.y, position.z);
+
+		matWorld = XMMatrixIdentity();
+
+		//ワールド行列にスケーリングを反映
+		matWorld *= matScale;
+
+		//ワールド行列に回転を反映
+		matWorld *= matRot;
+
+		//ワールド行列に平行移動を反映
+		matWorld *= matTrans;
+
+		//定数バッファに転送
+		constMapTransform0->mat = matWorld * matView * matProjection;
+
+
+		//ワールド変換行列
+		XMMATRIX matWorld1;
+
+		matWorld1 = XMMatrixIdentity();
+
+		//各種変形行列を計算
+		XMMATRIX matScale1 = XMMatrixScaling(1.0f, 1.0f, 1.0f);
+
+		XMMATRIX matRot1 = XMMatrixRotationY(XM_PI / 4.0f);
+
+		XMMATRIX matTrans1 = XMMatrixTranslation(-20.0f, 0, 0);
+
+		//ワールド行列を合成
+		matWorld1 = matScale1 * matRot1 * matTrans1;
+
+		//ワールド、ビュー、射影行列を合成してシェーダーに転送
+		constMapTransform1->mat = matWorld1 * matView * matProjection;
 
 
 		// 1.リソースバリアで書き込み可能に変更
@@ -971,11 +1014,21 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		barrierDesc.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET; // 描画状態へ
 		DXInit.commandList->ResourceBarrier(1, &barrierDesc);
 
+		D3D12_RESOURCE_BARRIER barrierDesc2{};
+		barrierDesc2.Transition.pResource = DXInit2.backBuffers[bbIndex2]; // バックバッファを指定
+		barrierDesc2.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT; // 表示状態から
+		barrierDesc2.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET; // 描画状態へ
+		DXInit2.commandList->ResourceBarrier(1, &barrierDesc2);
+
 		//2.描画先の変更
 		//レンダーターゲットビューのハンドルを取得
 		D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = DXInit.rtvHeap->GetCPUDescriptorHandleForHeapStart();
 		rtvHandle.ptr += bbIndex * DXInit.device->GetDescriptorHandleIncrementSize(DXInit.rtvHeapDesc.Type);
 		//DXInit.commandList->OMSetRenderTargets(1, &rtvHandle, false, nullptr);
+
+		D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle2 = DXInit2.rtvHeap->GetCPUDescriptorHandleForHeapStart();
+		rtvHandle2.ptr += bbIndex2 * DXInit2.device->GetDescriptorHandleIncrementSize(DXInit2.rtvHeapDesc.Type);
+		DXInit2.commandList->OMSetRenderTargets(1, &rtvHandle2, false, nullptr);
 
 		//深度ステンシルビュー用デスクリプターヒープのハンドルを取得
 		D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvHeap->GetCPUDescriptorHandleForHeapStart();
@@ -985,6 +1038,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		FLOAT clearColor[] = { 0.1f,0.25f,0.5f,0.0f }; //青っぽい色{ R, G, B, A }
 		DXInit.commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 		DXInit.commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+
+		DXInit2.commandList->ClearRenderTargetView(rtvHandle2, clearColor, 0, nullptr);
 
 		//スペースキーが押されていたら
 		if (key[DIK_SPACE])
@@ -1026,19 +1081,19 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		// プリミティブ形状の設定コマンド
 		// 三角形リスト
 		DXInit.commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		
+
 		// 点のリスト
 		//DXInit.commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_POINTLIST); 
-		
+
 		// 線のリスト
 		//DXInit.commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST); 
-		
+
 		// 線のストリップ
 		//DXInit.commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINESTRIP);
-		
+
 		// 三角形のストリップ
 		//DXInit.commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-		
+
 
 		// 頂点バッファビューの設定コマンド
 		DXInit.commandList->IASetVertexBuffers(0, 1, &vbView);
@@ -1055,11 +1110,20 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		//SRVヒープの先頭にあるSRVをルートパラメータ1番に設定
 		DXInit.commandList->SetGraphicsRootDescriptorTable(1, srvGpuHandle);
 
-		//全オブジェクトについての処理
-		for (int i = 0; i < _countof(object3ds); i++)
-		{
-			DrawObject3d(&object3ds[i], DXInit.commandList, vbView, ibView, _countof(indices));
-		}
+		//0番定数バッファビュー(CBV)の設定コマンド
+		DXInit.commandList->SetGraphicsRootConstantBufferView(2, constBuffTransform0->GetGPUVirtualAddress());
+
+		//インデックスバッファビューの設定コマンド
+		DXInit.commandList->IASetIndexBuffer(&ibView);
+
+		// 描画コマンド
+		DXInit.commandList->DrawIndexedInstanced(_countof(indices), 1, 0, 0, 0);
+
+		//1番定数バッファビュー(CBV)の設定コマンド
+		DXInit.commandList->SetGraphicsRootConstantBufferView(2, constBuffTransform1->GetGPUVirtualAddress());
+
+		// 描画コマンド
+		DXInit.commandList->DrawIndexedInstanced(_countof(indices), 1, 0, 0, 0);
 
 		//ブレンドを有効にする
 		blenddesc.BlendEnable = true;
@@ -1081,17 +1145,30 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		barrierDesc.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT; // 表示状態へ
 		DXInit.commandList->ResourceBarrier(1, &barrierDesc);
 
+		barrierDesc2.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET; // 描画状態から
+		barrierDesc2.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT; // 表示状態へ
+		DXInit2.commandList->ResourceBarrier(1, &barrierDesc2);
+
 		// 命令のクローズ
 		DXInit.result = DXInit.commandList->Close();
 		assert(SUCCEEDED(DXInit.result));
+
+		DXInit2.result = DXInit2.commandList->Close();
+		assert(SUCCEEDED(DXInit2.result));
 
 		// コマンドリストの実行
 		ID3D12CommandList* commandLists[] = { DXInit.commandList };
 		DXInit.commandQueue->ExecuteCommandLists(1, commandLists);
 
+		ID3D12CommandList* commandLists2[] = { DXInit2.commandList };
+		DXInit2.commandQueue->ExecuteCommandLists(1, commandLists2);
+
 		// 画面に表示するバッファをフリップ(裏表の入替え)
 		DXInit.result = DXInit.swapChain->Present(1, 0);
 		assert(SUCCEEDED(DXInit.result));
+
+		DXInit2.result = DXInit2.swapChain->Present(1, 0);
+		assert(SUCCEEDED(DXInit2.result));
 
 		//コマンドの実行完了を待つ
 		DXInit.commandQueue->Signal(DXInit.fence, ++DXInit.fenceVal);
@@ -1103,13 +1180,28 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			CloseHandle(event);
 		}
 
+		DXInit2.commandQueue->Signal(DXInit2.fence, ++DXInit2.fenceVal);
+		if (DXInit2.fence->GetCompletedValue() != DXInit2.fenceVal)
+		{
+			HANDLE event = CreateEvent(nullptr, false, false, nullptr);
+			DXInit2.fence->SetEventOnCompletion(DXInit2.fenceVal, event);
+			WaitForSingleObject(event, INFINITE);
+			CloseHandle(event);
+		}
+
 		//キューをクリア
 		DXInit.result = DXInit.commandAllocator->Reset();
 		assert(SUCCEEDED(DXInit.result));
 
+		DXInit2.result = DXInit2.commandAllocator->Reset();
+		assert(SUCCEEDED(DXInit2.result));
+
 		//再びコマンドリストにためる準備
 		DXInit.result = DXInit.commandList->Reset(DXInit.commandAllocator, nullptr);
 		assert(SUCCEEDED(DXInit.result));
+
+		DXInit2.result = DXInit2.commandList->Reset(DXInit2.commandAllocator, nullptr);
+		assert(SUCCEEDED(DXInit2.result));
 
 		// --- DirectX毎フレーム処理　ここまで --- //
 
@@ -1117,6 +1209,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	//ウィンドウクラスを登録解除
 	UnregisterClass(winApp.w.lpszClassName, winApp.w.hInstance);
+
+	//UnregisterClass(subWinApp.w.lpszClassName, subWinApp.w.hInstance);
 
 	return 0;
 }

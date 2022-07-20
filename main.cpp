@@ -14,6 +14,10 @@ using namespace DirectX;
 #pragma comment(lib,"dinput8.lib")
 #pragma comment(lib,"dxguid.lib")
 
+#include<wrl.h>
+
+using namespace Microsoft::WRL;
+
 //定数バッファ用データ構造体(マテリアル)
 struct ConstBufferDataMaterial
 {
@@ -161,13 +165,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		debugController->SetEnableGPUBasedValidation(TRUE);
 	}
 
-	//ComPtr<ID3D12InfoQueue> infoQueue;
-	//if (SUCCEEDED(device_->QueryInterface(IID_PPV_ARGS(&infoQueue))))
-	//{
-	//	infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);  //ヤバいエラー時に止まる
-	//	infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);  //エラー時に止まる
-	//}
-
 #endif
 
 	// ----- DirectX クラス ----- //
@@ -216,35 +213,35 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		{{   5.0f, -5.0f, -5.0f},{},{1.0f,1.0f}},  //右下
 		{{   5.0f,  5.0f, -5.0f},{},{1.0f,0.0f}},  //右上
 								
-		//後					
-		{{  -5.0f, -5.0f,  5.0f},{},{0.0f,1.0f}},  //左下
-		{{  -5.0f,  5.0f,  5.0f},{},{0.0f,0.0f}},  //左上
-		{{   5.0f, -5.0f,  5.0f},{},{1.0f,1.0f}},  //右下
-		{{   5.0f,  5.0f,  5.0f},{},{1.0f,0.0f}},  //右上
-								 
-		//左					
-		{{  -5.0f, -5.0f, -5.0f},{},{0.0f,1.0f}},  //左下
-		{{  -5.0f, -5.0f,  5.0f},{},{0.0f,0.0f}},  //左上
-		{{  -5.0f,  5.0f, -5.0f},{},{1.0f,1.0f}},  //右下
-		{{  -5.0f,  5.0f,  5.0f},{},{1.0f,0.0f}},  //右上
-								
-		//右					
-		{{   5.0f, -5.0f, -5.0f},{},{0.0f,1.0f}},  //左下
-		{{   5.0f, -5.0f,  5.0f},{},{0.0f,0.0f}},  //左上
-		{{   5.0f,  5.0f, -5.0f},{},{1.0f,1.0f}},  //右下
-		{{   5.0f,  5.0f,  5.0f},{},{1.0f,0.0f}},  //右上
-								
-		//下					
-		{{  -5.0f, -5.0f, -5.0f},{},{0.0f,1.0f}},  //左下
-		{{  -5.0f, -5.0f,  5.0f},{},{0.0f,1.0f}},  //左上
-		{{   5.0f, -5.0f, -5.0f},{},{1.0f,1.0f}},  //右下
-		{{   5.0f, -5.0f,  5.0f},{},{1.0f,1.0f}},  //右上
-								
-		//上					
-		{{  -5.0f,  5.0f, -5.0f},{},{0.0f,1.0f}},  //左下
-		{{  -5.0f,  5.0f,  5.0f},{},{0.0f,1.0f}},  //左上
-		{{   5.0f,  5.0f, -5.0f},{},{1.0f,1.0f}},  //右下
-		{{   5.0f,  5.0f,  5.0f},{},{1.0f,1.0f}},  //右上
+		////後					
+		//{{  -5.0f, -5.0f,  5.0f},{},{0.0f,1.0f}},  //左下
+		//{{  -5.0f,  5.0f,  5.0f},{},{0.0f,0.0f}},  //左上
+		//{{   5.0f, -5.0f,  5.0f},{},{1.0f,1.0f}},  //右下
+		//{{   5.0f,  5.0f,  5.0f},{},{1.0f,0.0f}},  //右上
+		//						 
+		////左					
+		//{{  -5.0f, -5.0f, -5.0f},{},{0.0f,1.0f}},  //左下
+		//{{  -5.0f, -5.0f,  5.0f},{},{0.0f,0.0f}},  //左上
+		//{{  -5.0f,  5.0f, -5.0f},{},{1.0f,1.0f}},  //右下
+		//{{  -5.0f,  5.0f,  5.0f},{},{1.0f,0.0f}},  //右上
+		//						
+		////右					
+		//{{   5.0f, -5.0f, -5.0f},{},{0.0f,1.0f}},  //左下
+		//{{   5.0f, -5.0f,  5.0f},{},{0.0f,0.0f}},  //左上
+		//{{   5.0f,  5.0f, -5.0f},{},{1.0f,1.0f}},  //右下
+		//{{   5.0f,  5.0f,  5.0f},{},{1.0f,0.0f}},  //右上
+		//						
+		////下					
+		//{{  -5.0f, -5.0f, -5.0f},{},{0.0f,1.0f}},  //左下
+		//{{  -5.0f, -5.0f,  5.0f},{},{0.0f,1.0f}},  //左上
+		//{{   5.0f, -5.0f, -5.0f},{},{1.0f,1.0f}},  //右下
+		//{{   5.0f, -5.0f,  5.0f},{},{1.0f,1.0f}},  //右上
+		//						
+		////上					
+		//{{  -5.0f,  5.0f, -5.0f},{},{0.0f,1.0f}},  //左下
+		//{{  -5.0f,  5.0f,  5.0f},{},{0.0f,1.0f}},  //左上
+		//{{   5.0f,  5.0f, -5.0f},{},{1.0f,1.0f}},  //右下
+		//{{   5.0f,  5.0f,  5.0f},{},{1.0f,1.0f}},  //右上
 	};
 
 	//インデックスデータ
@@ -252,31 +249,31 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	{
 		//前
 		0,1,2, //三角形1つ目
-		2,1,3, //三角形2つ目
+		//2,1,3, //三角形2つ目
 
-		//後
-		5,4,6, //三角形3つ目
-		5,6,7, //三角形4つ目
+		////後
+		//5,4,6, //三角形3つ目
+		//5,6,7, //三角形4つ目
 
-		//左
-		8,9,10,
-		10,9,11,
+		////左
+		//8,9,10,
+		//10,9,11,
 
-		//右
-		13,12,14,
-		13,14,15,
+		////右
+		//13,12,14,
+		//13,14,15,
 
-		//下
-		17,16,18,
-		17,18,19,
+		////下
+		//17,16,18,
+		//17,18,19,
 
-		//上
-		20,21,22,
-		22,21,23,
+		////上
+		//20,21,22,
+		//22,21,23,
 	};
 
 	//法線の計算
-	for (int i = 0; i < 36 / 3; i++)
+	for (int i = 0; i < 3 / 3; i++) //36
 	{
 		//三角形1つごとに計算していく
 
@@ -625,7 +622,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	assert(SUCCEEDED(DXInit.result));
 
 	//3Dオブジェクトの数
-	const size_t kObjectCount = 50;
+	const size_t kObjectCount = 1;
 
 	//3Dオブジェクトの配列
 	Object3d object3ds[kObjectCount];
@@ -736,7 +733,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//WICテクスチャのロード
 	DXInit.result = LoadFromWICFile
 	(
-		L"Resources/texture3.png",  //「Resources」フォルダの「texture.png」
+		L"Resources/texture2.png",  //「Resources」フォルダの「texture.png」
 		WIC_FLAGS_NONE,
 		&metadata, scratchImg
 	);

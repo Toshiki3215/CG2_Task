@@ -14,6 +14,9 @@ using namespace DirectX;
 #pragma comment(lib,"dinput8.lib")
 #pragma comment(lib,"dxguid.lib")
 
+#include<wrl.h>
+using namespace Microsoft::WRL;
+
 //定数バッファ用データ構造体(マテリアル)
 struct ConstBufferDataMaterial
 {
@@ -161,13 +164,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		debugController->SetEnableGPUBasedValidation(TRUE);
 	}
 
-	//ComPtr<ID3D12InfoQueue> infoQueue;
-	//if (SUCCEEDED(device_->QueryInterface(IID_PPV_ARGS(&infoQueue))))
-	//{
-	//	infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);  //ヤバいエラー時に止まる
-	//	infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);  //エラー時に止まる
-	//}
-
 #endif
 
 	// ----- DirectX クラス ----- //
@@ -195,6 +191,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	// --- DirectX初期化処理　ここまで --- //
 
+//#ifdef _DEBUG
+//	Microsoft::WRL::ComPtr<ID3D12InfoQueue> infoQueue;
+//	if (SUCCEEDED(DXInit.device->QueryInterface(IID_PPV_ARGS(&infoQueue))))
+//	{
+//		infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);  //ヤバいエラー時に止まる
+//		infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);  //エラー時に止まる
+//	}
+//#endif
 
 	// --- 描画初期化処理　ここから --- //
 

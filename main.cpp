@@ -771,8 +771,25 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		metadata = scratchImg.GetMetadata();
 	}
 
+	ScratchImage mipChain2{};
+
+	//ミニマップ生成
+	DXInit.result = GenerateMipMaps
+	(
+		scratchImg2.GetImages(), scratchImg2.GetImageCount(), scratchImg2.GetMetadata(),
+		TEX_FILTER_DEFAULT, 0, mipChain2
+	);
+
+	if (SUCCEEDED(DXInit.result))
+	{
+		scratchImg2 = std::move(mipChain2);
+		metadata2 = scratchImg2.GetMetadata();
+	}
+
 	//読み込んだディフューズテクスチャをSRGBとして扱う
 	metadata.format = MakeSRGB(metadata.format);
+
+	metadata2.format = MakeSRGB(metadata2.format);
 
 	// --- テクスチャバッファ --- //
 	//ヒープ設定
@@ -802,6 +819,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		nullptr,
 		IID_PPV_ARGS(&texBuff)
 	);
+
+	//ヒープ設定
+	D3D12_HEAP_PROPERTIES textureHeapProp2{};
+	textureHeapProp2.Type = D3D12_HEAP_TYPE_CUSTOM;
+	textureHeapProp2.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_WRITE_BACK;
+	textureHeapProp2.MemoryPoolPreference = D3D12_MEMORY_POOL_L0;
 
 	D3D12_RESOURCE_DESC textureResourceDesc2{};
 	textureResourceDesc2.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
@@ -835,6 +858,28 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			(UINT)i,
 			//全領域へコピー
 			nullptr, 
+			//元データアドレス
+			img->pixels,
+			//1ラインサイズ
+			(UINT)img->rowPitch,
+			//1枚サイズ
+			(UINT)img->slicePitch
+		);
+		assert(SUCCEEDED(DXInit.result));
+	}
+
+	//全ミニマップについて
+	for (size_t i = 0; i < metadata2.mipLevels; i++)
+	{
+		//ミニマップレベルを指定してイメージを取得
+		const Image* img = scratchImg2.GetImage(i, 0, 0);
+
+		//テクスチャバッファにデータ転送
+		DXInit.result = texBuff2->WriteToSubresource
+		(
+			(UINT)i,
+			//全領域へコピー
+			nullptr,
 			//元データアドレス
 			img->pixels,
 			//1ラインサイズ
@@ -1107,7 +1152,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		D3D12_GPU_DESCRIPTOR_HANDLE srvGpuHandle = srvHeap->GetGPUDescriptorHandleForHeapStart();
 
 		////SRVヒープの先頭にあるSRVをルートパラメータ1番に設定
-		//DXInit.commandList->SetGraphicsRootDescriptorTable(1, srvGpuHandle);
+		DXInit.commandList->SetGraphicsRootDescriptorTable(1, srvGpuHandle);
 
 		//二枚目を指し示すようにしたSRVハンドルをルートパラメータ一番に設定
 		srvGpuHandle.ptr += incrementSize;

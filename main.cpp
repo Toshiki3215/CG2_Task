@@ -160,6 +160,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		debugController->EnableDebugLayer();
 		debugController->SetEnableGPUBasedValidation(TRUE);
 	}
+
+	//ComPtr<ID3D12InfoQueue> infoQueue;
+	//if (SUCCEEDED(device_->QueryInterface(IID_PPV_ARGS(&infoQueue))))
+	//{
+	//	infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);  //ヤバいエラー時に止まる
+	//	infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);  //エラー時に止まる
+	//}
+
 #endif
 
 	// ----- DirectX クラス ----- //

@@ -745,6 +745,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		&metadata, scratchImg
 	);
 
+	TexMetadata metadata2{};
+	ScratchImage scratchImg2{};
+
+	//WICテクスチャのロード
+	DXInit.result = LoadFromWICFile
+	(
+		L"Resources/reimu.png",  //「Resources」フォルダの「texture.png」
+		WIC_FLAGS_NONE,
+		&metadata2, scratchImg2
+	);
+
 	ScratchImage mipChain{};
 
 	//ミニマップ生成
@@ -790,6 +801,26 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		D3D12_RESOURCE_STATE_GENERIC_READ,
 		nullptr,
 		IID_PPV_ARGS(&texBuff)
+	);
+
+	D3D12_RESOURCE_DESC textureResourceDesc2{};
+	textureResourceDesc2.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	textureResourceDesc2.Format = metadata2.format;
+	textureResourceDesc2.Width = metadata2.width;   //幅
+	textureResourceDesc2.Height = (UINT)metadata2.height;  //高さ
+	textureResourceDesc2.DepthOrArraySize = (UINT16)metadata2.arraySize;
+	textureResourceDesc2.MipLevels = (UINT16)metadata2.mipLevels;
+	textureResourceDesc2.SampleDesc.Count = 1;
+
+	ID3D12Resource* texBuff2 = nullptr;
+	DXInit.result = DXInit.device->CreateCommittedResource
+	(
+		&textureHeapProp,
+		D3D12_HEAP_FLAG_NONE,
+		&textureResourceDesc2,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&texBuff2)
 	);
 
 	//全ミニマップについて
@@ -845,6 +876,21 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	//ハンドルの指す位置にシェーダーリソースビュー作成
 	DXInit.device->CreateShaderResourceView(texBuff, &srvDesc, srvHandle);
+
+	//一つハンドルを進める
+	UINT incrementSize = DXInit.device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+	srvHandle.ptr += incrementSize;
+
+	//シェーダリソースビュー設定
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc2{};
+	srvDesc2.Format = textureResourceDesc2.Format;
+	srvDesc2.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc2.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDesc2.Texture2D.MipLevels = textureResourceDesc2.MipLevels;
+
+	//ハンドルの指す位置にシェーダーリソースビュー作成
+	DXInit.device->CreateShaderResourceView(texBuff2, &srvDesc2, srvHandle);
 
 	//深度バッファのリソース設定
 
@@ -1060,7 +1106,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		//SRVヒープの先頭ハンドルを取得(SRVを指しているはず)
 		D3D12_GPU_DESCRIPTOR_HANDLE srvGpuHandle = srvHeap->GetGPUDescriptorHandleForHeapStart();
 
-		//SRVヒープの先頭にあるSRVをルートパラメータ1番に設定
+		////SRVヒープの先頭にあるSRVをルートパラメータ1番に設定
+		//DXInit.commandList->SetGraphicsRootDescriptorTable(1, srvGpuHandle);
+
+		//二枚目を指し示すようにしたSRVハンドルをルートパラメータ一番に設定
+		srvGpuHandle.ptr += incrementSize;
+
 		DXInit.commandList->SetGraphicsRootDescriptorTable(1, srvGpuHandle);
 
 		//全オブジェクトについての処理

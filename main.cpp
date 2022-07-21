@@ -234,7 +234,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	vbView.SizeInBytes = sizeVB;
 
 	// 頂点1つ分のデータサイズ
-	//vbView.StrideInBytes = sizeof(XMFLOAT3);
 	vbView.StrideInBytes = sizeof(vertices[0]);
 
 	ID3DBlob* vsBlob = nullptr; // 頂点シェーダオブジェクト
@@ -711,7 +710,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//定数バッファにデータを転送する
 	//値を書き込むと自動的に転送される
 	//constMapMaterial->color = XMFLOAT4(1, 1, 1, 0.5f); //白
-	constMapMaterial->color = XMFLOAT4(0, 0, 0.2, 0.5f); //白
+	constMapMaterial->color = XMFLOAT4(0, 0, 0.2, 0.5f);
 
 	TexMetadata metadata{};
 	ScratchImage scratchImg{};
@@ -1015,7 +1014,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		//レンダーターゲットビューのハンドルを取得
 		D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = DXInit.rtvHeap->GetCPUDescriptorHandleForHeapStart();
 		rtvHandle.ptr += bbIndex * DXInit.device->GetDescriptorHandleIncrementSize(DXInit.rtvHeapDesc.Type);
-		//DXInit.commandList->OMSetRenderTargets(1, &rtvHandle, false, nullptr);
+		DXInit.commandList->OMSetRenderTargets(1, &rtvHandle, false, nullptr);
 
 		D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle2 = DXInit2.rtvHeap->GetCPUDescriptorHandleForHeapStart();
 		rtvHandle2.ptr += bbIndex2 * DXInit2.device->GetDescriptorHandleIncrementSize(DXInit2.rtvHeapDesc.Type);
@@ -1025,12 +1024,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvHeap->GetCPUDescriptorHandleForHeapStart();
 		DXInit.commandList->OMSetRenderTargets(1, &rtvHandle, false, &dsvHandle);
 
+		/*D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle2 = dsvHeap->GetCPUDescriptorHandleForHeapStart();
+		DXInit2.commandList->OMSetRenderTargets(1, &rtvHandle, false, &dsvHandle2);*/
+
 		//3.画面クリア
 		FLOAT clearColor[] = { 0.1f,0.25f,0.5f,0.0f }; //青っぽい色{ R, G, B, A }
 		DXInit.commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 		DXInit.commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
 		DXInit2.commandList->ClearRenderTargetView(rtvHandle2, clearColor, 0, nullptr);
+		//DXInit2.commandList->ClearDepthStencilView(dsvHandle2, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
 		//スペースキーが押されていたら
 		if (key[DIK_SPACE])

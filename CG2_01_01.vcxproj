@@ -158,11 +158,13 @@
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="DebugText.cpp" />
     <ClCompile Include="DirectXInitialize.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="WindowsApp.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="DebugText.h" />
     <ClInclude Include="DirectXInitialize.h" />
     <ClInclude Include="WindowsApp.h" />
   </ItemGroup>

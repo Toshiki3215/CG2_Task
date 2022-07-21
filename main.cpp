@@ -14,6 +14,9 @@ using namespace DirectX;
 #pragma comment(lib,"dinput8.lib")
 #pragma comment(lib,"dxguid.lib")
 
+#pragma comment(lib, "d3d9.lib")
+#include"DebugText.h"
+
 //Widowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
@@ -78,6 +81,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 
 	// --- 描画初期化処理　ここから --- //
+
+	//OX::DebugFont::initialize(g_pD3DDev, 2500, 1024);
 
 	//頂点データ構造体
 	struct Vertex

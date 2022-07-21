@@ -27,5 +27,4 @@ public:
 	void createWin();
 
 	void createSubWin();
-
 };

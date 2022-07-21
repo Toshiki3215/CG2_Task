@@ -24,9 +24,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	winApp.createSubWin();
 
-	/*WindowsApp subWinApp;
-	subWinApp.createSubWin();*/
-
 	// --- DirectX初期化処理　ここから --- //
 
 #ifdef _DEBUG
@@ -44,42 +41,35 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	DXInit.createDX(winApp.hwnd);
 
-	//DXInit.createDX(winApp.hwndSub);
-
-
 	DirectXInitialize DXInit2;
 
 	DXInit2.createDX(winApp.hwndSub);
+
+	/*DirectXInitialize DXInit2;
+
+	DXInit2.createDX(winApp.hwnd);
+
+	DirectXInitialize DXInit;
+
+	DXInit.createDX(winApp.hwndSub);*/
 
 	//DirectInputの初期化
 	IDirectInput8* directInput = nullptr;
 	DXInit.result = DirectInput8Create(winApp.w.hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&directInput, nullptr);
 	assert(SUCCEEDED(DXInit.result));
 
-	/*DXInit2.result = DirectInput8Create(subWinApp.w.hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&directInput, nullptr);
-	assert(SUCCEEDED(DXInit2.result));*/
-
 	//キーボードデバイスの生成
 	IDirectInputDevice8* keyboard = nullptr;
 	DXInit.result = directInput->CreateDevice(GUID_SysKeyboard, &keyboard, NULL);
 	assert(SUCCEEDED(DXInit.result));
 
-	/*DXInit2.result = directInput->CreateDevice(GUID_SysKeyboard, &keyboard, NULL);
-	assert(SUCCEEDED(DXInit2.result));*/
-
 	//入力データ形式のセット
 	DXInit.result = keyboard->SetDataFormat(&c_dfDIKeyboard); //標準形式
 	assert(SUCCEEDED(DXInit.result));
 
-	//DXInit2.result = keyboard->SetDataFormat(&c_dfDIKeyboard); //標準形式
-	//assert(SUCCEEDED(DXInit2.result));
-
 	//排他制御レベルのセット
 	DXInit.result = keyboard->SetCooperativeLevel(winApp.hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
 	assert(SUCCEEDED(DXInit.result));
-
-	/*DXInit2.result = keyboard->SetCooperativeLevel(subWinApp.hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
-	assert(SUCCEEDED(DXInit2.result));*/
 
 	// --- DirectX初期化処理　ここまで --- //
 
@@ -720,7 +710,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	//定数バッファにデータを転送する
 	//値を書き込むと自動的に転送される
-	constMapMaterial->color = XMFLOAT4(1, 1, 1, 0.5f); //白
+	//constMapMaterial->color = XMFLOAT4(1, 1, 1, 0.5f); //白
+	constMapMaterial->color = XMFLOAT4(0, 0, 0.2, 0.5f); //白
 
 	TexMetadata metadata{};
 	ScratchImage scratchImg{};
@@ -728,7 +719,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//WICテクスチャのロード
 	DXInit.result = LoadFromWICFile
 	(
-		L"Resources/texture3.png",  //「Resources」フォルダの「texture.png」
+		L"Resources/texture.png",  //「Resources」フォルダの「texture.png」
 		WIC_FLAGS_NONE,
 		&metadata, scratchImg
 	);

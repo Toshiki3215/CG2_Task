@@ -74,8 +74,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	DXInit.result = keyboard->SetCooperativeLevel(winApp.hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
 	assert(SUCCEEDED(DXInit.result));
 
-	DXInit.result = keyboard->SetCooperativeLevel(winApp.hwndSub, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
-	assert(SUCCEEDED(DXInit.result));
+	DXInit2.result = keyboard->SetCooperativeLevel(winApp.hwndSub, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
+	assert(SUCCEEDED(DXInit2.result));
 
 	// --- DirectX初期化処理　ここまで --- //
 
@@ -1047,6 +1047,42 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		{
 			FLOAT clearColor[] = { 0.1f,0.8f,0.8f,0.0f };
 			DXInit.commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+		}
+
+		if (key[DIK_R] || key[DIK_T])
+		{
+			if (key[DIK_R] && constMapMaterial->color.x < 1)
+			{
+				constMapMaterial->color.x += 0.01;
+			}
+			else if (key[DIK_T] && constMapMaterial->color.x > 0)
+			{
+				constMapMaterial->color.x -= 0.01;
+			}
+		}
+
+		if (key[DIK_G] || key[DIK_H])
+		{
+			if (key[DIK_G] && constMapMaterial->color.y < 1)
+			{
+				constMapMaterial->color.y += 0.01;
+			}
+			else if (key[DIK_H] && constMapMaterial->color.y > 0)
+			{
+				constMapMaterial->color.y -= 0.01;
+			}
+		}
+
+		if (key[DIK_B] || key[DIK_N])
+		{
+			if (key[DIK_B] && constMapMaterial->color.z < 1)
+			{
+				constMapMaterial->color.z += 0.01;
+			}
+			else if (key[DIK_N] && constMapMaterial->color.z > 0)
+			{
+				constMapMaterial->color.z -= 0.01;
+			}
 		}
 
 		//4.描画コマンド　ここから

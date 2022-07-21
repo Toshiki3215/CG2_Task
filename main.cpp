@@ -71,6 +71,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	DXInit.result = keyboard->SetCooperativeLevel(winApp.hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
 	assert(SUCCEEDED(DXInit.result));
 
+	DXInit.result = keyboard->SetCooperativeLevel(winApp.hwndSub, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
+	assert(SUCCEEDED(DXInit.result));
+
 	// --- DirectX初期化処理　ここまで --- //
 
 
@@ -1024,8 +1027,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvHeap->GetCPUDescriptorHandleForHeapStart();
 		DXInit.commandList->OMSetRenderTargets(1, &rtvHandle, false, &dsvHandle);
 
-		/*D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle2 = dsvHeap->GetCPUDescriptorHandleForHeapStart();
-		DXInit2.commandList->OMSetRenderTargets(1, &rtvHandle, false, &dsvHandle2);*/
+		D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle2 = dsvHeap->GetCPUDescriptorHandleForHeapStart();
+		DXInit2.commandList->OMSetRenderTargets(1, &rtvHandle2, false, &dsvHandle2);
 
 		//3.画面クリア
 		FLOAT clearColor[] = { 0.1f,0.25f,0.5f,0.0f }; //青っぽい色{ R, G, B, A }
@@ -1033,7 +1036,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		DXInit.commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
 		DXInit2.commandList->ClearRenderTargetView(rtvHandle2, clearColor, 0, nullptr);
-		//DXInit2.commandList->ClearDepthStencilView(dsvHandle2, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
 		//スペースキーが押されていたら
 		if (key[DIK_SPACE])

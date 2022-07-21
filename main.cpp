@@ -58,21 +58,32 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	DXInit.result = DirectInput8Create(winApp.w.hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&directInput, nullptr);
 	assert(SUCCEEDED(DXInit.result));
 
+	IDirectInput8* directInput2 = nullptr;
+	DXInit.result = DirectInput8Create(winApp.w.hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&directInput2, nullptr);
+	assert(SUCCEEDED(DXInit.result));
+
 	//キーボードデバイスの生成
 	IDirectInputDevice8* keyboard = nullptr;
 	DXInit.result = directInput->CreateDevice(GUID_SysKeyboard, &keyboard, NULL);
+	assert(SUCCEEDED(DXInit.result));
+
+	IDirectInputDevice8* keyboard2 = nullptr;
+	DXInit.result = directInput->CreateDevice(GUID_SysKeyboard, &keyboard2, NULL);
 	assert(SUCCEEDED(DXInit.result));
 
 	//入力データ形式のセット
 	DXInit.result = keyboard->SetDataFormat(&c_dfDIKeyboard); //標準形式
 	assert(SUCCEEDED(DXInit.result));
 
+	DXInit.result = keyboard2->SetDataFormat(&c_dfDIKeyboard); //標準形式
+	assert(SUCCEEDED(DXInit.result));
+
 	//排他制御レベルのセット
 	DXInit.result = keyboard->SetCooperativeLevel(winApp.hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
 	assert(SUCCEEDED(DXInit.result));
 
-	DXInit.result = keyboard->SetCooperativeLevel(winApp.hwndSub, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
-	assert(SUCCEEDED(DXInit.result));
+	DXInit2.result = keyboard2->SetCooperativeLevel(winApp.hwndSub, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
+	assert(SUCCEEDED(DXInit2.result));
 
 	// --- DirectX初期化処理　ここまで --- //
 
@@ -902,10 +913,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 		//キーボード情報の取得開始
 		keyboard->Acquire();
+		keyboard2->Acquire();
 
 		//全キーの入力状態を取得する
 		BYTE key[256] = {};
 		keyboard->GetDeviceState(sizeof(key), key);
+		keyboard2->GetDeviceState(sizeof(key), key);
 
 		//数字の0キーが押されていたら
 		if (key[DIK_0])
@@ -1042,6 +1055,54 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		{
 			FLOAT clearColor[] = { 0.1f,0.8f,0.8f,0.0f };
 			DXInit.commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+		}
+
+		if (key[DIK_R] || key[DIK_T])
+		{
+			if (key[DIK_R] && constMapMaterial->color.x < 1)
+			{
+				constMapMaterial->color.x += 0.01f;
+			}
+			else if (key[DIK_T] && constMapMaterial->color.x > 0)
+			{
+				constMapMaterial->color.x -= 0.01f;
+			}
+		}
+
+		if (key[DIK_G] || key[DIK_H])
+		{
+			if (key[DIK_G] && constMapMaterial->color.y < 1)
+			{
+				constMapMaterial->color.y += 0.01f;
+			}
+			else if (key[DIK_H] && constMapMaterial->color.y > 0)
+			{
+				constMapMaterial->color.y -= 0.01f;
+			}
+		}
+
+		if (key[DIK_B] || key[DIK_N])
+		{
+			if (key[DIK_B] && constMapMaterial->color.z < 1)
+			{
+				constMapMaterial->color.z += 0.01f;
+			}
+			else if (key[DIK_N] && constMapMaterial->color.z > 0)
+			{
+				constMapMaterial->color.z -= 0.01f;
+			}
+		}
+
+		if (key[DIK_Z] || key[DIK_X])
+		{
+			if (key[DIK_Z] && constMapMaterial->color.w < 1)
+			{
+				constMapMaterial->color.w += 0.01f;
+			}
+			else if (key[DIK_X] && constMapMaterial->color.w > 0)
+			{
+				constMapMaterial->color.w -= 0.01f;
+			}
 		}
 
 		//4.描画コマンド　ここから

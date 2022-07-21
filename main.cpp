@@ -734,7 +734,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//WICテクスチャのロード
 	DXInit.result = LoadFromWICFile
 	(
-		L"Resources/texture2.png",  //「Resources」フォルダの「texture.png」
+		L"Resources/texture.png",  //「Resources」フォルダの「texture.png」
 		WIC_FLAGS_NONE,
 		&metadata, scratchImg
 	);

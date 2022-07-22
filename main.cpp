@@ -14,6 +14,9 @@ using namespace DirectX;
 #pragma comment(lib,"dinput8.lib")
 #pragma comment(lib,"dxguid.lib")
 
+//#pragma comment(lib, "d3d9.lib")
+//#include"DebugText.h"
+
 //Widowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
@@ -59,8 +62,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	assert(SUCCEEDED(DXInit.result));
 
 	IDirectInput8* directInput2 = nullptr;
-	DXInit.result = DirectInput8Create(winApp.w.hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&directInput2, nullptr);
-	assert(SUCCEEDED(DXInit.result));
+	DXInit2.result = DirectInput8Create(winApp.w.hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&directInput2, nullptr);
+	assert(SUCCEEDED(DXInit2.result));
 
 	//キーボードデバイスの生成
 	IDirectInputDevice8* keyboard = nullptr;
@@ -75,8 +78,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	DXInit.result = keyboard->SetDataFormat(&c_dfDIKeyboard); //標準形式
 	assert(SUCCEEDED(DXInit.result));
 
-	DXInit.result = keyboard2->SetDataFormat(&c_dfDIKeyboard); //標準形式
-	assert(SUCCEEDED(DXInit.result));
+	DXInit2.result = keyboard2->SetDataFormat(&c_dfDIKeyboard); //標準形式
+	assert(SUCCEEDED(DXInit2.result));
 
 	//排他制御レベルのセット
 	DXInit.result = keyboard->SetCooperativeLevel(winApp.hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
@@ -89,6 +92,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 
 	// --- 描画初期化処理　ここから --- //
+
+	//OX::DebugFont::initialize(g_pD3DDev, 2500, 1024);
 
 	//頂点データ構造体
 	struct Vertex
@@ -918,6 +923,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		//全キーの入力状態を取得する
 		BYTE key[256] = {};
 		keyboard->GetDeviceState(sizeof(key), key);
+
 		keyboard2->GetDeviceState(sizeof(key), key);
 
 		//数字の0キーが押されていたら
@@ -1061,11 +1067,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		{
 			if (key[DIK_R] && constMapMaterial->color.x < 1)
 			{
-				constMapMaterial->color.x += 0.01f;
+				constMapMaterial->color.x += 0.01;
 			}
 			else if (key[DIK_T] && constMapMaterial->color.x > 0)
 			{
-				constMapMaterial->color.x -= 0.01f;
+				constMapMaterial->color.x -= 0.01;
 			}
 		}
 
@@ -1073,11 +1079,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		{
 			if (key[DIK_G] && constMapMaterial->color.y < 1)
 			{
-				constMapMaterial->color.y += 0.01f;
+				constMapMaterial->color.y += 0.01;
 			}
 			else if (key[DIK_H] && constMapMaterial->color.y > 0)
 			{
-				constMapMaterial->color.y -= 0.01f;
+				constMapMaterial->color.y -= 0.01;
 			}
 		}
 
@@ -1085,23 +1091,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		{
 			if (key[DIK_B] && constMapMaterial->color.z < 1)
 			{
-				constMapMaterial->color.z += 0.01f;
+				constMapMaterial->color.z += 0.01;
 			}
 			else if (key[DIK_N] && constMapMaterial->color.z > 0)
 			{
-				constMapMaterial->color.z -= 0.01f;
-			}
-		}
-
-		if (key[DIK_Z] || key[DIK_X])
-		{
-			if (key[DIK_Z] && constMapMaterial->color.w < 1)
-			{
-				constMapMaterial->color.w += 0.01f;
-			}
-			else if (key[DIK_X] && constMapMaterial->color.w > 0)
-			{
-				constMapMaterial->color.w -= 0.01f;
+				constMapMaterial->color.z -= 0.01;
 			}
 		}
 

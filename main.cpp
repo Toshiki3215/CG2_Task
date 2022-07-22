@@ -725,7 +725,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	//定数バッファにデータを転送する
 	//値を書き込むと自動的に転送される
-	constMapMaterial->color = XMFLOAT4(1, 1, 1, 0.5f); //白
+	constMapMaterial->color = XMFLOAT4(1, 1, 1, 0.8f); //白
 
 	TexMetadata metadata{};
 	ScratchImage scratchImg{};
@@ -980,6 +980,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 		//3.画面クリア
 		FLOAT clearColor[] = { 0.1f,0.25f,0.5f,0.0f }; //青っぽい色{ R, G, B, A }
+		//FLOAT clearColor[] = { 0.0f,0.0f,1.0f,0.0f }; //青っぽい色{ R, G, B, A }
 		DXInit.commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 		DXInit.commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
@@ -1033,6 +1034,18 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 				constMapMaterial->color.z -= 0.01;
 			}
 		}
+
+		/*if (key[DIK_B] || key[DIK_N])
+		{
+			if (key[DIK_B] && constMapMaterial->color.w < 1)
+			{
+				constMapMaterial->color.w += 0.01;
+			}
+			else if (key[DIK_N] && constMapMaterial->color.w > 0)
+			{
+				constMapMaterial->color.w -= 0.01;
+			}
+		}*/
 
 
 		//4.描画コマンド　ここから
@@ -1106,7 +1119,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		//ブレンドを有効にする
 		blenddesc.BlendEnable = true;
 
-		//加算
+		////加算
 		blenddesc.BlendOpAlpha = D3D12_BLEND_OP_ADD;
 
 		//ソースの値を100%使う
@@ -1114,6 +1127,24 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 		//デストの値を0%使う
 		blenddesc.DestBlendAlpha = D3D12_BLEND_ZERO;
+
+		////加算
+		//blenddesc.BlendOp = D3D12_BLEND_OP_ADD;
+
+		////ソースの値を100%使う
+		//blenddesc.SrcBlend = D3D12_BLEND_SRC_ALPHA;
+
+		////デストの値を0%使う
+		//blenddesc.DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+
+		//加算
+		blenddesc.BlendOp = D3D12_BLEND_OP_ADD;
+
+		//ソースの値を100%使う
+		blenddesc.SrcBlend = D3D12_BLEND_ONE;
+
+		//デストの値を0%使う
+		blenddesc.DestBlend = D3D12_BLEND_ONE;
 
 
 		//4.描画コマンド　ここまで

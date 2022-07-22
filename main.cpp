@@ -354,7 +354,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	vbView.SizeInBytes = sizeVB;
 
 	// 頂点1つ分のデータサイズ
-	//vbView.StrideInBytes = sizeof(XMFLOAT3);
 	vbView.StrideInBytes = sizeof(vertices[0]);
 
 	ID3DBlob* vsBlob = nullptr; // 頂点シェーダオブジェクト
@@ -890,6 +889,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
 	DXInit.device->CreateDepthStencilView(depthBuff, &dsvDesc, dsvHeap->GetCPUDescriptorHandleForHeapStart());
 
+	//色変化用タイマー
+	int timer = 200;
+
 	// --- 描画初期化処理　ここまで --- //
 
 	//ゲームループ
@@ -918,12 +920,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		//全キーの入力状態を取得する
 		BYTE key[256] = {};
 		keyboard->GetDeviceState(sizeof(key), key);
-
-		//数字の0キーが押されていたら
-		if (key[DIK_0])
-		{
-			OutputDebugStringA("Hit 0\n"); //出力ウィンドウに「Hit 0」と表示
-		}
 
 		// バックバッファの番号を取得(2つなので0番か1番)
 		UINT bbIndex = DXInit.swapChain->GetCurrentBackBufferIndex();
@@ -990,15 +986,54 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		//スペースキーが押されていたら
 		if (key[DIK_SPACE])
 		{
-			FLOAT clearColor[] = { 0.1f,0.8f,0.8f,0.0f };
-			DXInit.commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+			timer = 200;
+			constMapMaterial->color.x = 1.0f;
+			constMapMaterial->color.y = 1.0f;
+			constMapMaterial->color.z = 1.0f;
 		}
 
-		if (constMapMaterial->color.x > 0)
+		if (timer > 0)
 		{
+			timer--;
 			constMapMaterial->color.x -= 0.005f;
-			constMapMaterial->color.y -= 0.001f;
 		}
+
+		if (key[DIK_R] || key[DIK_T])
+		{
+			if (key[DIK_R] && constMapMaterial->color.x < 1)
+			{
+				constMapMaterial->color.x += 0.01;
+			}
+			else if (key[DIK_T] && constMapMaterial->color.x > 0)
+			{
+				constMapMaterial->color.x -= 0.01;
+			}
+		}
+
+		if (key[DIK_G] || key[DIK_H])
+		{
+			if (key[DIK_G] && constMapMaterial->color.y < 1)
+			{
+				constMapMaterial->color.y += 0.01;
+			}
+			else if (key[DIK_H] && constMapMaterial->color.y > 0)
+			{
+				constMapMaterial->color.y -= 0.01;
+			}
+		}
+
+		if (key[DIK_B] || key[DIK_N])
+		{
+			if (key[DIK_B] && constMapMaterial->color.z < 1)
+			{
+				constMapMaterial->color.z += 0.01;
+			}
+			else if (key[DIK_N] && constMapMaterial->color.z > 0)
+			{
+				constMapMaterial->color.z -= 0.01;
+			}
+		}
+
 
 		//4.描画コマンド　ここから
 

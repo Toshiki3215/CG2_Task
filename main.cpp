@@ -890,7 +890,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
 	DXInit.device->CreateDepthStencilView(depthBuff, &dsvDesc, dsvHeap->GetCPUDescriptorHandleForHeapStart());
 
-
 	// --- 描画初期化処理　ここまで --- //
 
 	//ゲームループ
@@ -993,6 +992,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		{
 			FLOAT clearColor[] = { 0.1f,0.8f,0.8f,0.0f };
 			DXInit.commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+		}
+
+		if (constMapMaterial->color.x > 0)
+		{
+			constMapMaterial->color.x -= 0.005f;
+			constMapMaterial->color.y -= 0.001f;
 		}
 
 		//4.描画コマンド　ここから
